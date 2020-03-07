@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Bluetooth LE Bendlabs</string>
+    <string name="bl_connected">Connected to LE</string>
+    <string name="bl_disconnected">Disconnected from LE</string>
+    <string name="bl_not_found">Status: Bluetooth not found</string>
+    <string name="bl_connecting">Connecting…</string>
+    <string name="bl_show_paired">Show Paired Devices</string>
+    <string name="bl_not_on">Bluetooth not on</string>
+    <string name="bl_discovery_started">Discovery started</string>
+    <string name="bl_discovery_stopped">Discovery stopped</string>
+    <string name="bl_turned_off">Bluetooth turned Off</string>
+</resources>
