@@ -105,7 +105,6 @@ public class BluetoothLEService extends BluetoothGattCallback {
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
             gatt.writeDescriptor(descriptor);
 
-
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
             Log.i(TAG, "Attempting to start service discovery:" +
@@ -120,7 +119,7 @@ public class BluetoothLEService extends BluetoothGattCallback {
         if(status == BluetoothGatt.GATT_SUCCESS){
             final Intent intent = new Intent(ACTION_DATA_AVAILABLE);
             final byte[] data = characteristic.getValue();
-            Log.i(TAG,"Received: "+ Arrays.toString(data));
+            // Log.i(TAG,"Received: "+ Arrays.toString(data));
             if (data.length > 0) {
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
                 for(byte byteChar : data)
@@ -133,19 +132,20 @@ public class BluetoothLEService extends BluetoothGattCallback {
     }
 
     @Override
-// Characteristic notification
     public void onCharacteristicChanged(BluetoothGatt gatt,
                                         BluetoothGattCharacteristic characteristic) {
-        byte[] data = characteristic.getValue();
-        float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).getFloat();
-        float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).getFloat();
-
-        // Log.i(TAG, "A0:"+a0 +" A1:"+a1);
-        Intent intent = new Intent(ACTION_DATA_AVAILABLE);
-        intent.putExtra(EXTRA_ANGLE_0,a0);
-        intent.putExtra(EXTRA_ANGLE_1,a1);
-        sendBroadcast(intent);
-
+        if(characteristic.getUuid().equals(BLCHARACTERISTIC_A_ANGLE)){
+            byte[] data = characteristic.getValue();
+            float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+            Intent intent = new Intent(ACTION_DATA_AVAILABLE);
+            intent.putExtra(EXTRA_ANGLE_0,a0);
+            intent.putExtra(EXTRA_ANGLE_1,a1);
+            sendBroadcast(intent);
+        }else{
+            UUID uuid = characteristic.getUuid();
+            System.out.println(uuid);
+        }
     }
 
 

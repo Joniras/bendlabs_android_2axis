@@ -16,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -40,6 +41,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     private TextView mBluetoothStatus;
     private TextView angle_x;
     private TextView angle_y;
+    private LinearLayout angleResult;
     private Switch blSwitch;
     private BluetoothAdapter mBTAdapter;
     private ArrayAdapter<BTDevice> mBTArrayAdapter;
@@ -86,6 +88,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                     }
                     break;
                 case ACTION_DATA_AVAILABLE:
+                    angleResult.setVisibility(View.VISIBLE);
                     float a0 = intent.getFloatExtra(EXTRA_ANGLE_0,0);
                     float a1 = intent.getFloatExtra(EXTRA_ANGLE_1,0);
                     angle_x.setText(Float.toString(a0));
@@ -115,6 +118,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
         angle_y = findViewById(R.id.angle_y);
+        angleResult = findViewById(R.id.angleResult);
         blSwitch = findViewById(R.id.blSwitch);
         Button mDiscoverBtn = findViewById(R.id.discover);
         Button mListPairedDevicesBtn = findViewById(R.id.PairedBtn);
@@ -134,7 +138,6 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         filter.addAction(ACTION_GATT_CONNECTED);
         filter.addAction(ACTION_GATT_DISCONNECTED);
         filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
-        filter.addAction("TESTING");
         registerReceiver(blEReceiver, filter);
 
         IntentFilter actionFoundFilter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -156,10 +159,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         if (mBTArrayAdapter == null) {
             // Device does not support Bluetooth
             mBluetoothStatus.setText(R.string.bl_not_found);
-            Toast.makeText(getApplicationContext(), "Bluetooth device not found!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.bl_device_notfound, Toast.LENGTH_SHORT).show();
         } else {
             blSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     if (isChecked) {
@@ -187,20 +189,19 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     }
 
     private void bluetoothOn() {
-        sendBroadcast(new Intent("TESTING"));
         if (!mBTAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             displayBluetoothState(true);
-            Toast.makeText(getApplicationContext(), "Bluetooth turned on", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), getString(R.string.bl_enabled), Toast.LENGTH_SHORT).show();
         } else {
             displayBluetoothState(true);
-            Toast.makeText(getApplicationContext(), "Bluetooth is already on", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.bl_already_on, Toast.LENGTH_SHORT).show();
         }
     }
 
     private void displayBluetoothState(boolean isOn) {
-        mBluetoothStatus.setText(isOn ? "Bluetooth enabled" : "Bluetooth disabled");
+        mBluetoothStatus.setText(isOn ? getString(R.string.bl_enabled) : getString(R.string.bL_disbaled));
         blSwitch.setChecked(isOn);
     }
 
@@ -272,7 +273,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         if (device.getType() == BluetoothDevice.DEVICE_TYPE_LE) {
             new BluetoothLEService(device, this);
         } else {
-            Toast.makeText(getBaseContext(), "Only Bluetooth Low Energy Supported", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getBaseContext(), R.string.only_ble, Toast.LENGTH_SHORT).show();
         }
     }
 
