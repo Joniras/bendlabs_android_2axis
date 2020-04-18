@@ -25,14 +25,24 @@ import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.util.Locale;
 import java.util.Set;
 
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_DATA_AVAILABLE;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.observers.DisposableObserver;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
+import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_ANGLE_DATA_AVAILABLE;
+import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_BATTERY_DATA_AVAILABLE;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_GATT_CONNECTED;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_GATT_DISCONNECTED;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_GATT_SERVICES_DISCOVERED;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_ANGLE_0;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_ANGLE_1;
+import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_DATA;
 
 
 public class MainActivity extends Activity implements AdapterView.OnItemClickListener {
@@ -45,8 +55,11 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     private Switch blSwitch;
     private BluetoothAdapter mBTAdapter;
     private ArrayAdapter<BTDevice> mBTArrayAdapter;
+    PublishSubject<Float> _angleX = PublishSubject.create();
+    PublishSubject<Float> _angleY = PublishSubject.create();
 
     private final String TAG = MainActivity.class.getSimpleName();
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     // #defines for identifying shared types between calling functions
     private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
@@ -55,7 +68,6 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     final BroadcastReceiver blReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Received BL: "+intent);
             String action = intent.getAction();
             assert action != null;
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
@@ -64,6 +76,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                 assert device != null;
                 mBTArrayAdapter.add(new BTDevice(device.getName(), device.getAddress(), device.getType()));
                 mBTArrayAdapter.notifyDataSetChanged();
+                if (device.getAddress().equals("FA:0E:BA:83:09:8A")) {
+                    connect(device);
+                }
             }
         }
     };
@@ -87,15 +102,15 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                             break;
                     }
                     break;
-                case ACTION_DATA_AVAILABLE:
-                    angleResult.setVisibility(View.VISIBLE);
-                    float a0 = intent.getFloatExtra(EXTRA_ANGLE_0,0);
-                    float a1 = intent.getFloatExtra(EXTRA_ANGLE_1,0);
-                    angle_x.setText(Float.toString(a0));
-                    angle_y.setText(Float.toString(a1));
+                case ACTION_ANGLE_DATA_AVAILABLE:
+                    processAngleData(intent.getFloatExtra(EXTRA_ANGLE_0, 0), intent.getFloatExtra(EXTRA_ANGLE_1, 0));
+                    break;
+                case ACTION_BATTERY_DATA_AVAILABLE:
+                    showBatteryLevel(intent.getIntExtra(EXTRA_DATA, 0));
                     break;
                 case ACTION_GATT_CONNECTED:
                     mBluetoothStatus.setText(R.string.bl_connected);
+                    angleResult.setVisibility(View.VISIBLE);
                     break;
                 case ACTION_GATT_DISCONNECTED:
                     mBluetoothStatus.setText(R.string.bl_disconnected);
@@ -107,13 +122,35 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             }
         }
 
+
     };
+
+    private void showBatteryLevel(int intExtra) {
+        Toast.makeText(this, "Battery level: "+intExtra, Toast.LENGTH_LONG).show();
+    }
+
+    private void processAngleData(float angleX, float angleY) {
+        _angleX.onNext(angleX);
+        _angleY.onNext(angleY);
+    }
+
+    private void displayAngleXData(float value) {
+        angle_x.setText(String.format(Locale.GERMAN, "%.2f", value));
+    }
+
+    private void displayAngleYData(float value) {
+        angle_y.setText(String.format(Locale.GERMAN, "%.2f", value));
+    }
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        disposable.add(_angleX.subscribeOn(Schedulers.newThread()).observeOn(AndroidSchedulers.mainThread()).subscribeWith(displayAngleX()));
+
+        disposable.add(_angleY.subscribeOn(Schedulers.newThread()).observeOn(AndroidSchedulers.mainThread()).subscribeWith(displayAngleY()));
 
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
@@ -125,16 +162,16 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
 
         mBTArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
         mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
-        Log.i(TAG,"Adapter is ON: "+ (mBTAdapter.getState() == BluetoothAdapter.STATE_ON)+" Discovering: "+mBTAdapter.isDiscovering());
-        if(!mBTAdapter.cancelDiscovery()){
-            Log.e(TAG,"Discovery could not be stopped with state "+ (mBTAdapter.getState() == BluetoothAdapter.STATE_ON));
-        }else{
-            Log.i(TAG,"Discovery stopped");
+        if (!mBTAdapter.cancelDiscovery()) {
+            Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState() == BluetoothAdapter.STATE_ON));
+        } else {
+            Log.i(TAG, "Discovery stopped");
         }
         displayBluetoothState(mBTAdapter.getState() == BluetoothAdapter.STATE_ON);
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(ACTION_DATA_AVAILABLE);
+        filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
+        filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
         filter.addAction(ACTION_GATT_CONNECTED);
         filter.addAction(ACTION_GATT_DISCONNECTED);
         filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
@@ -161,6 +198,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             mBluetoothStatus.setText(R.string.bl_not_found);
             Toast.makeText(getApplicationContext(), R.string.bl_device_notfound, Toast.LENGTH_SHORT).show();
         } else {
+            discover();
             blSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -186,6 +224,42 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                 }
             });
         }
+    }
+
+    private DisposableObserver<Float> displayAngleX() {
+        return new DisposableObserver<Float>() {
+
+            @Override
+            public void onNext(@NonNull Float aFloat) {
+                MainActivity.this.displayAngleXData(aFloat);
+            }
+
+            @Override
+            public void onError(@NonNull Throwable e) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        };
+    }
+
+    private DisposableObserver<Float> displayAngleY() {
+        return new DisposableObserver<Float>() {
+
+            @Override
+            public void onNext(@NonNull Float aFloat) {
+                MainActivity.this.displayAngleYData(aFloat);
+            }
+
+            @Override
+            public void onError(@NonNull Throwable e) {
+                Log.i(TAG, "error");
+            }
+
+            @Override
+            public void onComplete() {}
+        };
     }
 
     private void bluetoothOn() {
@@ -231,9 +305,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             if (mBTAdapter.isEnabled()) {
                 mBTArrayAdapter.clear(); // clear items
                 Toast.makeText(getApplicationContext(), R.string.bl_discovery_started, Toast.LENGTH_SHORT).show();
-                if(!mBTAdapter.startDiscovery()){
-                    Log.e(TAG,"Discovery could not be started");
-                }else{
+                if (!mBTAdapter.startDiscovery()) {
+                    Log.e(TAG, "Discovery could not be started");
+                } else {
                     Log.i(TAG, "Discovery started");
                 }
             } else {
@@ -262,13 +336,11 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             Toast.makeText(getBaseContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
             return;
         }
+        connect(mBTAdapter.getRemoteDevice(this.mBTArrayAdapter.getItem(position).getAddress()));
+    }
 
+    public void connect(BluetoothDevice device) {
         mBluetoothStatus.setText(R.string.bl_connecting);
-        BTDevice listItem = this.mBTArrayAdapter.getItem(position);
-        assert listItem != null;
-        final String address = listItem.getAddress();
-
-        BluetoothDevice device = mBTAdapter.getRemoteDevice(address);
 
         if (device.getType() == BluetoothDevice.DEVICE_TYPE_LE) {
             new BluetoothLEService(device, this);

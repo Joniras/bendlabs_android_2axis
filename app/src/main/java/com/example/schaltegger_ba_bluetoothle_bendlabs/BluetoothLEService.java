@@ -25,8 +25,10 @@ public class BluetoothLEService extends BluetoothGattCallback {
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
     final static String ACTION_GATT_DISCONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
-    final static String ACTION_DATA_AVAILABLE =
+    final static String ACTION_ANGLE_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
+    final static String ACTION_BATTERY_DATA_AVAILABLE =
+            "com.example.bluetooth.le.ACTION_BATTERY_DATA_AVAILABLE";
     final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
     final static String EXTRA_ANGLE_0 =
@@ -48,10 +50,12 @@ public class BluetoothLEService extends BluetoothGattCallback {
 
     final static UUID BLSERVICE_GENERIC_ANGLE = convertFromInteger(0x1820);
     final static UUID BLCHARACTERISTIC_A_ANGLE = convertFromInteger(0x2A70);
+    final static UUID BLDESCRIPTOR_A_ANGLE = convertFromInteger(0x2902);
 
 
     final static UUID BLSERVICE_GENERIC_BATTERY = convertFromInteger(0x180F);
     final static UUID BLCHARACTERISTIC_B_BATTERY = convertFromInteger(0x2A19);
+    final static UUID BLDESCRIPTOR_B_BATTERY = convertFromInteger(0x2902);
 
 
     final static UUID BLSERVICE_GENERIC_DEVICE_INFORMATION = convertFromInteger(0x180A);
@@ -62,7 +66,7 @@ public class BluetoothLEService extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_GDI_MODEL_NUMBER = convertFromInteger(0x2A24);
 
     BluetoothLEService(BluetoothDevice device, Context context) {
-        bluetoothGatt = device.connectGatt(context, false, this );
+        bluetoothGatt = device.connectGatt(context, false, this);
         this.context = context;
     }
 
@@ -89,21 +93,14 @@ public class BluetoothLEService extends BluetoothGattCallback {
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         super.onServicesDiscovered(gatt, status);
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            Log.w(TAG, "onServicesDiscovered success: ");
+            Log.w(TAG, "onServicesDiscovered success");
             sendBroadcast(new Intent(ACTION_GATT_CONNECTED));
             sendBroadcast(new Intent(ACTION_GATT_SERVICES_DISCOVERED));
 
-            BluetoothGattCharacteristic characteristic =
-                    gatt.getService(BLSERVICE_GENERIC_ANGLE)
-                            .getCharacteristic(BLCHARACTERISTIC_A_ANGLE);
-            gatt.setCharacteristicNotification(characteristic, true);
+            readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
+            // https://medium.com/@martijn.van.welie/making-android-ble-work-part-3-117d3a8aee23
 
-            BluetoothGattDescriptor descriptor =
-                    characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
-
-            descriptor.setValue(
-                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-            gatt.writeDescriptor(descriptor);
+            // turnOnNotifications(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY, BLDESCRIPTOR_B_BATTERY);
 
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
@@ -112,37 +109,57 @@ public class BluetoothLEService extends BluetoothGattCallback {
         }
     }
 
+    private void readChara(BluetoothGatt gatt, UUID service, UUID characteristic) {
+        BluetoothGattCharacteristic chara = gatt.getService(service)
+                .getCharacteristic(characteristic);
+        boolean successfull = gatt.readCharacteristic(chara);
+        Log.i(TAG, "Readoperation susff: " + successfull);
+    }
+
+    private void turnOnNotifications(BluetoothGatt gatt, UUID service, UUID characteristic, UUID descriptor) {
+        BluetoothGattCharacteristic chara =
+                gatt.getService(service)
+                        .getCharacteristic(characteristic);
+        gatt.setCharacteristicNotification(chara, true);
+
+        BluetoothGattDescriptor desc = chara.getDescriptor(descriptor);
+        desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        gatt.writeDescriptor(desc);
+    }
+
+
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         super.onCharacteristicRead(gatt, characteristic, status);
-        Log.i(TAG,"Received: "+ Arrays.toString(characteristic.getValue()));
-        if(status == BluetoothGatt.GATT_SUCCESS){
-            final Intent intent = new Intent(ACTION_DATA_AVAILABLE);
-            final byte[] data = characteristic.getValue();
-            // Log.i(TAG,"Received: "+ Arrays.toString(data));
-            if (data.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
-                    stringBuilder.append(String.format("%02X ", byteChar));
-                intent.putExtra(EXTRA_DATA, new String(data) + "\n" +
-                        stringBuilder.toString());
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            if (BLCHARACTERISTIC_B_BATTERY.equals(characteristic.getUuid())) {
+
+                turnOnNotifications(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, BLDESCRIPTOR_A_ANGLE);
+                final Intent intent = new Intent(ACTION_BATTERY_DATA_AVAILABLE);
+                final byte[] data = characteristic.getValue();
+                // Log.i(TAG,"Received: "+ Arrays.toString(data));
+                if (data.length > 0) {
+                    intent.putExtra(EXTRA_DATA, ((data[0] & 0xFF)));
+                }
+                sendBroadcast(intent);
+            } else {
+                Log.i(TAG, "UNKNOWN Read Characteristic");
             }
-            sendBroadcast(intent);
         }
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt,
                                         BluetoothGattCharacteristic characteristic) {
-        if(characteristic.getUuid().equals(BLCHARACTERISTIC_A_ANGLE)){
+        if (characteristic.getUuid().equals(BLCHARACTERISTIC_A_ANGLE)) {
             byte[] data = characteristic.getValue();
             float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-            Intent intent = new Intent(ACTION_DATA_AVAILABLE);
-            intent.putExtra(EXTRA_ANGLE_0,a0);
-            intent.putExtra(EXTRA_ANGLE_1,a1);
+            Intent intent = new Intent(ACTION_ANGLE_DATA_AVAILABLE);
+            intent.putExtra(EXTRA_ANGLE_0, a0);
+            intent.putExtra(EXTRA_ANGLE_1, a1);
             sendBroadcast(intent);
-        }else{
+        } else {
             UUID uuid = characteristic.getUuid();
             System.out.println(uuid);
         }
