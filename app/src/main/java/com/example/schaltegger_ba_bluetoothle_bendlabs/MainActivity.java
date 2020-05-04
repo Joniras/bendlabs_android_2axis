@@ -55,11 +55,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     private Switch blSwitch;
     private BluetoothAdapter mBTAdapter;
     private ArrayAdapter<BTDevice> mBTArrayAdapter;
-    PublishSubject<Float> _angleX = PublishSubject.create();
-    PublishSubject<Float> _angleY = PublishSubject.create();
+    private AngleData angleData = AngleData.getInstance();
 
     private final String TAG = MainActivity.class.getSimpleName();
-    private CompositeDisposable disposable = new CompositeDisposable();
 
     // #defines for identifying shared types between calling functions
     private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
@@ -117,7 +115,6 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                     break;
                 case ACTION_GATT_SERVICES_DISCOVERED:
                     // Log.i(TAG, Arrays.toString(new List[]{bluetoothGatt.getServices()}));
-
                     break;
             }
         }
@@ -130,16 +127,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     }
 
     private void processAngleData(float angleX, float angleY) {
-        _angleX.onNext(angleX);
-        _angleY.onNext(angleY);
-    }
-
-    private void displayAngleXData(float value) {
-        angle_x.setText(String.format(Locale.GERMAN, "%.2f", value));
-    }
-
-    private void displayAngleYData(float value) {
-        angle_y.setText(String.format(Locale.GERMAN, "%.2f", value));
+        angleData.onNext(new AnglePair(angleX,angleY));
     }
 
 
@@ -147,10 +135,22 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        this.angleData = AngleData.getInstance();
+        this.angleData.subscribeWith(new DisposableObserver<AnglePair>() {
 
-        disposable.add(_angleX.subscribeOn(Schedulers.newThread()).observeOn(AndroidSchedulers.mainThread()).subscribeWith(displayAngleX()));
+            @Override
+            public void onNext(@NonNull AnglePair angles) {
+                MainActivity.this.displayAngleData(angles);
+            }
 
-        disposable.add(_angleY.subscribeOn(Schedulers.newThread()).observeOn(AndroidSchedulers.mainThread()).subscribeWith(displayAngleY()));
+            @Override
+            public void onError(@NonNull Throwable e) {
+                Log.i(TAG, "error");
+            }
+
+            @Override
+            public void onComplete() {}
+        });
 
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
@@ -226,40 +226,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         }
     }
 
-    private DisposableObserver<Float> displayAngleX() {
-        return new DisposableObserver<Float>() {
-
-            @Override
-            public void onNext(@NonNull Float aFloat) {
-                MainActivity.this.displayAngleXData(aFloat);
-            }
-
-            @Override
-            public void onError(@NonNull Throwable e) {
-            }
-
-            @Override
-            public void onComplete() {
-            }
-        };
-    }
-
-    private DisposableObserver<Float> displayAngleY() {
-        return new DisposableObserver<Float>() {
-
-            @Override
-            public void onNext(@NonNull Float aFloat) {
-                MainActivity.this.displayAngleYData(aFloat);
-            }
-
-            @Override
-            public void onError(@NonNull Throwable e) {
-                Log.i(TAG, "error");
-            }
-
-            @Override
-            public void onComplete() {}
-        };
+    private void displayAngleData(AnglePair angles) {
+        angle_x.setText(String.format(Locale.GERMAN, "%.2f", angles.getX()));
+        angle_y.setText(String.format(Locale.GERMAN, "%.2f", angles.getY()));
     }
 
     private void bluetoothOn() {
