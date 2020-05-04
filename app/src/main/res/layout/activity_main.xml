@@ -99,13 +99,17 @@
         android:layout_toRightOf="@+id/checkboxLED1"
         android:text="Discover New Devices" />
 
+    <Button
+        android:id="@+id/btn_maps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Go to Maps" />
+
     <ListView
         android:id="@+id/btDeviceList"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/PairedBtn"
-        android:layout_alignEnd="@+id/off"
-        android:layout_alignRight="@+id/off"
         android:choiceMode="singleChoice" />
 
 </LinearLayout>

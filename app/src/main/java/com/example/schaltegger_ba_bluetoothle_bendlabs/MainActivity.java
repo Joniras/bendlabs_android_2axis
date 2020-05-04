@@ -45,7 +45,7 @@ import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_DATA;
 
 
-public class MainActivity extends Activity implements AdapterView.OnItemClickListener {
+public class MainActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener {
 
     // GUI Components
     private TextView mBluetoothStatus;
@@ -356,4 +356,9 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     }
 
 
+    @Override
+    public void onClick(View v) {
+        Intent intent = new Intent(this, MapsActivity.class);
+        startActivity(intent);
+    }
 }
