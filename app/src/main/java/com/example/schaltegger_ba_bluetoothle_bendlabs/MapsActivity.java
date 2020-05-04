@@ -44,7 +44,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         AngleData.getInstance().subscribeWith(new DisposableObserver<AnglePair>() {
             @Override
             public void onNext(@NonNull AnglePair anglePair) {
-                mMap.moveCamera(CameraUpdateFactory.zoomTo(anglePair.getX()));
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(anglePair.getY()));
             }
 
             @Override

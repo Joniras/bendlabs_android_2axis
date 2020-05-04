@@ -5,11 +5,14 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -28,12 +31,8 @@ import androidx.core.content.ContextCompat;
 import java.util.Locale;
 import java.util.Set;
 
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.observers.DisposableObserver;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_ANGLE_DATA_AVAILABLE;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_BATTERY_DATA_AVAILABLE;
@@ -47,13 +46,13 @@ import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService
 
 public class MainActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener {
 
+    private static AngleService service;
     // GUI Components
     private TextView mBluetoothStatus;
     private TextView angle_x;
     private TextView angle_y;
     private LinearLayout angleResult;
     private Switch blSwitch;
-    private BluetoothAdapter mBTAdapter;
     private ArrayAdapter<BTDevice> mBTArrayAdapter;
     private AngleData angleData = AngleData.getInstance();
 
@@ -75,7 +74,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                 mBTArrayAdapter.add(new BTDevice(device.getName(), device.getAddress(), device.getType()));
                 mBTArrayAdapter.notifyDataSetChanged();
                 if (device.getAddress().equals("FA:0E:BA:83:09:8A")) {
-                    connect(device);
+                    service.connect(device.getAddress());
                 }
             }
         }
@@ -100,9 +99,6 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                             break;
                     }
                     break;
-                case ACTION_ANGLE_DATA_AVAILABLE:
-                    processAngleData(intent.getFloatExtra(EXTRA_ANGLE_0, 0), intent.getFloatExtra(EXTRA_ANGLE_1, 0));
-                    break;
                 case ACTION_BATTERY_DATA_AVAILABLE:
                     showBatteryLevel(intent.getIntExtra(EXTRA_DATA, 0));
                     break;
@@ -126,16 +122,17 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         Toast.makeText(this, "Battery level: "+intExtra, Toast.LENGTH_LONG).show();
     }
 
-    private void processAngleData(float angleX, float angleY) {
-        angleData.onNext(new AnglePair(angleX,angleY));
-    }
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Intent intent = new Intent(this, AngleService.class);
+        boolean bound = bindService(intent, connection, Context.BIND_AUTO_CREATE);
+
+        Log.i(TAG,"Bound: "+bound);
+
         setContentView(R.layout.activity_main);
-        this.angleData = AngleData.getInstance();
         this.angleData.subscribeWith(new DisposableObserver<AnglePair>() {
 
             @Override
@@ -161,16 +158,10 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         Button mListPairedDevicesBtn = findViewById(R.id.PairedBtn);
 
         mBTArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
-        mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
-        if (!mBTAdapter.cancelDiscovery()) {
-            Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState() == BluetoothAdapter.STATE_ON));
-        } else {
-            Log.i(TAG, "Discovery stopped");
-        }
-        displayBluetoothState(mBTAdapter.getState() == BluetoothAdapter.STATE_ON);
+
+        // displayBluetoothState(mBTAdapter.getState() == BluetoothAdapter.STATE_ON);
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
         filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
         filter.addAction(ACTION_GATT_CONNECTED);
         filter.addAction(ACTION_GATT_DISCONNECTED);
@@ -198,7 +189,6 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
             mBluetoothStatus.setText(R.string.bl_not_found);
             Toast.makeText(getApplicationContext(), R.string.bl_device_notfound, Toast.LENGTH_SHORT).show();
         } else {
-            discover();
             blSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -232,15 +222,10 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     }
 
     private void bluetoothOn() {
-        if (!mBTAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            displayBluetoothState(true);
-            Toast.makeText(getApplicationContext(), getString(R.string.bl_enabled), Toast.LENGTH_SHORT).show();
-        } else {
-            displayBluetoothState(true);
-            Toast.makeText(getApplicationContext(), R.string.bl_already_on, Toast.LENGTH_SHORT).show();
-        }
+        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+        displayBluetoothState(true);
+        Toast.makeText(getApplicationContext(), getString(R.string.bl_enabled), Toast.LENGTH_SHORT).show();
     }
 
     private void displayBluetoothState(boolean isOn) {
@@ -260,34 +245,19 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     }
 
     private void bluetoothOff() {
-        mBTAdapter.disable();
         displayBluetoothState(false);
         Toast.makeText(getApplicationContext(), R.string.bl_turned_off, Toast.LENGTH_SHORT).show();
     }
 
     private void discover() {
         // Check if the device is already discovering
-        if (mBTAdapter.isDiscovering()) {
-            mBTAdapter.cancelDiscovery();
-            Toast.makeText(getApplicationContext(), R.string.bl_discovery_stopped, Toast.LENGTH_SHORT).show();
-        } else {
-            if (mBTAdapter.isEnabled()) {
-                mBTArrayAdapter.clear(); // clear items
-                Toast.makeText(getApplicationContext(), R.string.bl_discovery_started, Toast.LENGTH_SHORT).show();
-                if (!mBTAdapter.startDiscovery()) {
-                    Log.e(TAG, "Discovery could not be started");
-                } else {
-                    Log.i(TAG, "Discovery started");
-                }
-            } else {
-                Toast.makeText(getApplicationContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
-            }
-        }
+        service.discover();
+
     }
 
 
     private void listPairedDevices() {
-        mBTArrayAdapter.clear();
+        /*mBTArrayAdapter.clear();
         Set<BluetoothDevice> mPairedDevices = mBTAdapter.getBondedDevices();
         if (mBTAdapter.isEnabled()) {
             // put it's one to the adapter
@@ -295,28 +265,31 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                 mBTArrayAdapter.add(new BTDevice(device.getName(), device.getAddress(), device.getType()));
             Toast.makeText(getApplicationContext(), R.string.bl_show_paired, Toast.LENGTH_SHORT).show();
         } else
-            Toast.makeText(getApplicationContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();*/
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-        if (!mBTAdapter.isEnabled()) {
-            Toast.makeText(getBaseContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        connect(mBTAdapter.getRemoteDevice(this.mBTArrayAdapter.getItem(position).getAddress()));
+        service.connect(this.mBTArrayAdapter.getItem(position).getAddress());
     }
 
-    public void connect(BluetoothDevice device) {
-        mBluetoothStatus.setText(R.string.bl_connecting);
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection connection = new ServiceConnection() {
 
-        if (device.getType() == BluetoothDevice.DEVICE_TYPE_LE) {
-            new BluetoothLEService(device, this);
-        } else {
-            Toast.makeText(getBaseContext(), R.string.only_ble, Toast.LENGTH_SHORT).show();
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            Log.i(TAG,"Service connected");
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            AngleService.LocalBinder binder = (AngleService.LocalBinder) service;
+            MainActivity.service = binder.getService();
         }
-    }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            Log.i(TAG,"Service disconncted");
+        }
+    };
 
     @Override
     protected void onDestroy() {
