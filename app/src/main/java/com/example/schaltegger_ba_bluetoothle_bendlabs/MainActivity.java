@@ -29,24 +29,17 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.util.Locale;
-import java.util.Set;
 
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.observers.DisposableObserver;
-
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_ANGLE_DATA_AVAILABLE;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_BATTERY_DATA_AVAILABLE;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_GATT_CONNECTED;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_GATT_DISCONNECTED;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_GATT_SERVICES_DISCOVERED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_ANGLE_0;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_ANGLE_1;
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_DATA;
 
 
-public class MainActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener {
+public class MainActivity extends Activity implements AdapterView.OnItemClickListener, View.OnClickListener, AngleObserver {
 
-    private static AngleService service;
+    private static BluetoothService service;
     // GUI Components
     private TextView mBluetoothStatus;
     private TextView angle_x;
@@ -54,7 +47,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     private LinearLayout angleResult;
     private Switch blSwitch;
     private ArrayAdapter<BTDevice> mBTArrayAdapter;
-    private AngleData angleData = AngleData.getInstance();
+    private AngleService angleService = AngleService.getInstance();
 
     private final String TAG = MainActivity.class.getSimpleName();
 
@@ -122,32 +115,17 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
         Toast.makeText(this, "Battery level: "+intExtra, Toast.LENGTH_LONG).show();
     }
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = new Intent(this, AngleService.class);
+        Intent intent = new Intent(this, BluetoothService.class);
         boolean bound = bindService(intent, connection, Context.BIND_AUTO_CREATE);
+
+        angleService.registerObserver(this);
 
         Log.i(TAG,"Bound: "+bound);
 
         setContentView(R.layout.activity_main);
-        this.angleData.subscribeWith(new DisposableObserver<AnglePair>() {
-
-            @Override
-            public void onNext(@NonNull AnglePair angles) {
-                MainActivity.this.displayAngleData(angles);
-            }
-
-            @Override
-            public void onError(@NonNull Throwable e) {
-                Log.i(TAG, "error");
-            }
-
-            @Override
-            public void onComplete() {}
-        });
 
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
@@ -281,7 +259,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
                                        IBinder service) {
             Log.i(TAG,"Service connected");
             // We've bound to LocalService, cast the IBinder and get LocalService instance
-            AngleService.LocalBinder binder = (AngleService.LocalBinder) service;
+            BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
             MainActivity.service = binder.getService();
         }
 
@@ -295,6 +273,7 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(blReceiver);
+        angleService.removeObserver(this);
     }
 
 
@@ -302,5 +281,10 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     public void onClick(View v) {
         Intent intent = new Intent(this, MapsActivity.class);
         startActivity(intent);
+    }
+
+    @Override
+    public void onAngleDataChanged(AnglePair a) {
+        this.displayAngleData(a);
     }
 }

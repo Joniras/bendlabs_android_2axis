@@ -82,7 +82,6 @@ public class BluetoothLEService extends BluetoothGattCallback {
             Log.i(TAG, "Disconnected from GATT server.");
             sendBroadcast(new Intent(ACTION_GATT_DISCONNECTED));
         }
-
     }
 
     private void sendBroadcast(Intent intent) {

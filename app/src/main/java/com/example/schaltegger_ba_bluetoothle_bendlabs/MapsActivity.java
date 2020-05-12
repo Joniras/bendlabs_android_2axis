@@ -1,8 +1,8 @@
 package com.example.schaltegger_ba_bluetoothle_bendlabs;
 
-import androidx.fragment.app.FragmentActivity;
-
 import android.os.Bundle;
+
+import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -11,10 +11,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.observers.DisposableObserver;
-
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AngleObserver {
 
     private GoogleMap mMap;
 
@@ -26,6 +23,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        AngleService.getInstance().registerObserver(this);
     }
 
 
@@ -41,25 +39,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        AngleData.getInstance().subscribeWith(new DisposableObserver<AnglePair>() {
-            @Override
-            public void onNext(@NonNull AnglePair anglePair) {
-                mMap.moveCamera(CameraUpdateFactory.zoomTo(anglePair.getY()));
-            }
-
-            @Override
-            public void onError(@NonNull Throwable e) {
-
-            }
-
-            @Override
-            public void onComplete() {
-
-            }
-        });
         // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    @Override
+    public void onAngleDataChanged(AnglePair a) {
+        mMap.moveCamera(CameraUpdateFactory.zoomTo(a.getY()));
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        AngleService.getInstance().removeObserver(this);
     }
 }
