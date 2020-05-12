@@ -1,4 +1,4 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs;
+package com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -16,26 +16,26 @@ import java.util.Arrays;
 import java.util.UUID;
 
 
-public class BluetoothLEService extends BluetoothGattCallback {
-    private final String TAG = BluetoothLEService.class.getSimpleName();
+public class SensorCommunicator extends BluetoothGattCallback {
+    private final String TAG = SensorCommunicator.class.getSimpleName();
     private final BluetoothGatt bluetoothGatt;
     private final Context context;
 
-    final static String ACTION_GATT_CONNECTED =
+    public final static String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
-    final static String ACTION_GATT_DISCONNECTED =
+    public final static String ACTION_GATT_DISCONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
-    final static String ACTION_ANGLE_DATA_AVAILABLE =
+    public final static String ACTION_ANGLE_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
-    final static String ACTION_BATTERY_DATA_AVAILABLE =
+    public final static String ACTION_BATTERY_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_BATTERY_DATA_AVAILABLE";
-    final static String EXTRA_DATA =
+    public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
-    final static String EXTRA_ANGLE_0 =
+    public final static String EXTRA_ANGLE_0 =
             "com.example.bluetooth.le.EXTRA_ANGLE_0";
-    final static String EXTRA_ANGLE_1 =
+    public final static String EXTRA_ANGLE_1 =
             "com.example.bluetooth.le.EXTRA_ANGLE_1";
-    final static String ACTION_GATT_SERVICES_DISCOVERED =
+    public final static String ACTION_GATT_SERVICES_DISCOVERED =
             "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
 
     final static UUID BLSERVICE_GENERIC_ACCESS = convertFromInteger(0x1800);
@@ -65,7 +65,7 @@ public class BluetoothLEService extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_GDI_MANUFACTURER = convertFromInteger(0x2A29);
     final static UUID BLCHARACTERISTIC_GDI_MODEL_NUMBER = convertFromInteger(0x2A24);
 
-    BluetoothLEService(BluetoothDevice device, Context context) {
+    SensorCommunicator(BluetoothDevice device, Context context) {
         bluetoothGatt = device.connectGatt(context, false, this);
         this.context = context;
     }

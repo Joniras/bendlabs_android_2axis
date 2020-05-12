@@ -15,4 +15,11 @@
     <string name="bl_already_on">Bluetooth is already on</string>
     <string name="bl_device_notfound">Bluetooth device not found!</string>
     <string name="title_activity_maps">Map</string>
+    <string name="status">Status:</string>
+    <string name="lt_bluetooth_status"><![CDATA[<Bluetooth Status>]]></string>
+    <string name="x">X:</string>
+    <string name="y">Y:</string>
+    <string name="battery">Battery:</string>
+    <string name="connect">Connect</string>
+    <string name="go_to_maps">Go to Maps</string>
 </resources>

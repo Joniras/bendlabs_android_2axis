@@ -4,6 +4,9 @@ import android.os.Bundle;
 
 import androidx.fragment.app.FragmentActivity;
 
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -11,7 +14,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, AngleObserver {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IAngleObserver {
 
     private GoogleMap mMap;
 
@@ -23,7 +26,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        AngleService.getInstance().registerObserver(this);
     }
 
 
@@ -43,6 +45,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        AngleObservable.getInstance().registerObserver(this);
     }
 
     @Override
@@ -53,6 +56,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AngleService.getInstance().removeObserver(this);
+        AngleObservable.getInstance().removeObserver(this);
     }
 }

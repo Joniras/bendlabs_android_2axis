@@ -1,7 +1,8 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs;
+package com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -16,18 +17,37 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.schaltegger_ba_bluetoothle_bendlabs.MainActivity;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.R;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
+
+import java.util.Objects;
+
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.ACTION_ANGLE_DATA_AVAILABLE;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_ANGLE_0;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.BluetoothLEService.EXTRA_ANGLE_1;
+import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
+import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_ANGLE_0;
+import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_ANGLE_1;
 
 public class BluetoothService extends Service {
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
     private final IBinder binder = new LocalBinder();
-    private AngleService angleService = AngleService.getInstance();
+    private AngleObservable angleObservable = AngleObservable.getInstance();
+
+    final BroadcastReceiver blReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            assert device != null;
+            if (device.getAddress().equals(MainActivity.IDOFSensor)) {
+                connect(device.getAddress());
+            }
+        }
+    };
 
     public void discover() {
+        registerReceiver(blReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
         sendToThread("discover");
     }
     // receives Broadcasts
@@ -36,17 +56,15 @@ public class BluetoothService extends Service {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             assert action != null;
-            switch (action) {
-                case ACTION_ANGLE_DATA_AVAILABLE:
-                    processAngleData(intent.getFloatExtra(EXTRA_ANGLE_0, 0), intent.getFloatExtra(EXTRA_ANGLE_1, 0));
-                    break;
+            if (ACTION_ANGLE_DATA_AVAILABLE.equals(action)) {
+                processAngleData(intent.getFloatExtra(EXTRA_ANGLE_0, 0), intent.getFloatExtra(EXTRA_ANGLE_1, 0));
             }
         }
     };
 
 
     private void processAngleData(float angleX, float angleY) {
-        angleService.onNext(new AnglePair(angleX,angleY));
+        angleObservable.onNext(new AnglePair(angleX,angleY));
     }
 
     public BluetoothService() {
@@ -58,7 +76,7 @@ public class BluetoothService extends Service {
         private String TAG = "Thread";
         private BluetoothAdapter mBTAdapter;
 
-        public ServiceHandler(Looper looper) {
+        ServiceHandler(Looper looper) {
             super(looper);
             mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
             if (!mBTAdapter.cancelDiscovery()) {
@@ -70,11 +88,11 @@ public class BluetoothService extends Service {
 
         @Override
         public void handleMessage(Message msg) {
-            switch (msg.getData().getString("ACTION")) {
+            switch (Objects.requireNonNull(msg.getData().getString("ACTION"))) {
                 case "connect":
                     String address = msg.getData().getString("address");
                     Log.i("Thread", "Connecting to: " + address);
-                    new BluetoothLEService(mBTAdapter.getRemoteDevice(address), BluetoothService.this);
+                    new SensorCommunicator(mBTAdapter.getRemoteDevice(address), BluetoothService.this);
                     break;
                 case "discover":
                     if (mBTAdapter.isDiscovering()) {
@@ -125,11 +143,7 @@ public class BluetoothService extends Service {
 
     @Override
     public void onCreate() {
-        // Start up the thread running the service. Note that we create a
-        // separate thread because the service normally runs in the process's
-        // main thread, which we don't want to block. We also make it
-        // background priority so CPU-intensive work doesn't disrupt our UI.
-        HandlerThread thread = new HandlerThread("ServiceStartArguments",
+        HandlerThread thread = new HandlerThread("AngleThread",
                 THREAD_PRIORITY_BACKGROUND);
         thread.start();
 
@@ -151,8 +165,8 @@ public class BluetoothService extends Service {
         return START_STICKY;
     }
 
-    class LocalBinder extends Binder {
-        BluetoothService getService() {
+    public class LocalBinder extends Binder {
+        public BluetoothService getService() {
             // Return this instance of LocalService so clients can call public methods
             return BluetoothService.this;
         }
@@ -168,6 +182,7 @@ public class BluetoothService extends Service {
 
     @Override
     public void onDestroy() {
-        Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "service died", Toast.LENGTH_SHORT).show();
+        unregisterReceiver(blReceiver);
     }
 }

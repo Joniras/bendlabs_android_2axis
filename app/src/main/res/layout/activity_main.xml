@@ -10,15 +10,6 @@
     android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context=".MainActivity">
 
-    <Switch
-        android:id="@+id/blSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
-        android:text="Bluetooth"
-        android:textSize="24sp" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -30,7 +21,7 @@
             android:layout_weight="0.1"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="Status:"
+            android:text="@string/status"
             android:textStyle="bold" />
 
         <TextView
@@ -38,26 +29,24 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
 
-            android:layout_alignTop="@+id/checkboxLED1"
-            android:layout_centerHorizontal="true"
             android:layout_weight="0.9"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="&lt;Bluetooth Status>" />
+            android:text="@string/lt_bluetooth_status" />
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/angleResult"
+        android:id="@+id/angleresult"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:visibility="invisible">
 
         <TextView
-            android:id="@+id/textView"
+            android:id="@+id/textview"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="X:"
+            android:text="@string/x"
             android:layout_width="0dp" />
 
         <TextView
@@ -71,7 +60,7 @@
             android:id="@+id/textView3"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Y:"
+            android:text="@string/y"
             android:layout_width="0dp" />
 
         <TextView
@@ -82,35 +71,42 @@
             android:layout_width="0dp" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/PairedBtn"
+    <LinearLayout
+        android:id="@+id/battery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/on"
-        android:layout_toStartOf="@+id/discover"
-        android:text="Show paired Devices" />
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/batterylabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/battery" />
+
+        <TextView
+            android:id="@+id/batterylevel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="" />
+
+    </LinearLayout>
 
     <Button
-        android:id="@+id/discover"
+        android:id="@+id/connect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/off"
-        android:layout_toEndOf="@+id/checkboxLED1"
-        android:layout_toRightOf="@+id/checkboxLED1"
-        android:text="Discover New Devices" />
+        android:onClick="onClick"
+        android:text="@string/connect" />
 
     <Button
         android:id="@+id/btn_maps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Go to Maps" />
-
-    <ListView
-        android:id="@+id/btDeviceList"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:choiceMode="singleChoice" />
+        android:text="@string/go_to_maps" />
 
 </LinearLayout>
 
