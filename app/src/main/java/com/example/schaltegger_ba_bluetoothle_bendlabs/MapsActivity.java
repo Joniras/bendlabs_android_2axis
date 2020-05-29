@@ -1,61 +1,118 @@
 package com.example.schaltegger_ba_bluetoothle_bendlabs;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.fragment.app.FragmentActivity;
 
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.DISPLAYFINGER;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.IDisplayFingerObserver;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IAngleObserver {
+import java.util.ArrayList;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IAngleObserver, IDisplayFingerObserver {
 
     private GoogleMap mMap;
+    private DISPLAYFINGER currentFinger = DISPLAYFINGER.OFF;
+    private float currentZoom = 10;
+    private static final int skipAngles = 0;
+    private static final int skipAnglesAfterMove = 10;
+    private static final float AngleChangeForMove = 30;
+    private static final double zoomFactor = 0.1;
+    private ArrayList<AnglePair> angles = new ArrayList<>();
+    private int anglesToSkip = 0;
+    private SupportMapFragment mapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        ((MyLayout)findViewById(R.id.mylayout)).registerObserver(this);
     }
 
-
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        ((MyLayout)findViewById(R.id.mylayout)).setMap(mapFragment.getView());
+        mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
         AngleObservable.getInstance().registerObserver(this);
     }
 
     @Override
     public void onAngleDataChanged(AnglePair a) {
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(a.getY()));
+        this.angles.add(0, a);
+        if (angles.size() > (skipAngles + 2)) {
+            this.angles.remove(this.angles.size() - 1);
+            //skip Angles here after moving the camera
+            if (anglesToSkip == 0) {
+                this.checkChange();
+            } else {
+                anglesToSkip--;
+            }
+        }
+    }
+
+    private void checkChange() {
+        /*
+        Version 1
+
+        private float currentZoom = 10;
+    private static final int skipAngles = 0;
+    private static final int skipAnglesAfterMove = 30;
+    private static final float AngleChangeForMove = 10;
+    private static final double zoomFactor = 0.2;
+
+        double change = Math.abs(this.angles.get(0).getY() - this.angles.get((skipAngles) + 1).getY());
+        if (change > AngleChangeForMove) {
+            anglesToSkip = skipAnglesAfterMove;
+            Log.i("Maps", "Change is: " + change + " and thumb is down: " + thumpDown);
+
+            if (thumpDown) {
+                currentZoom += zoomFactor;
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
+            } else {
+                currentZoom -= zoomFactor;
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
+            }
+        }
+        */
+
+        double angle = Math.abs(this.angles.get(0).getY());
+        if (angle > AngleChangeForMove) {
+            anglesToSkip = skipAnglesAfterMove;
+            Log.i("Maps", "Change is: " + angle + " and thumb is down: " + currentFinger);
+
+            if (currentFinger == DISPLAYFINGER.OFF) {
+                currentZoom += zoomFactor;
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
+            } else {
+                currentZoom -= zoomFactor;
+                mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
+            }
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         AngleObservable.getInstance().removeObserver(this);
+        ((MyLayout)findViewById(R.id.mylayout)).removeObserver(this);
+    }
+
+    @Override
+    public void onFingerOnDisplayChanged(DISPLAYFINGER fingerOnDisplay) {
+        this.currentFinger = fingerOnDisplay;
     }
 }
