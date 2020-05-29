@@ -98,6 +98,7 @@
         android:id="@+id/connect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
         android:onClick="onClick"
         android:text="@string/connect" />
 
@@ -105,6 +106,7 @@
         android:id="@+id/btn_maps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
         android:onClick="onClick"
         android:text="@string/go_to_maps" />
 

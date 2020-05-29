@@ -30,7 +30,6 @@ import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCo
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_ANGLE_1;
 
 public class BluetoothService extends Service {
-    private Looper serviceLooper;
     private ServiceHandler serviceHandler;
     private final IBinder binder = new LocalBinder();
     private AngleObservable angleObservable = AngleObservable.getInstance();
@@ -148,7 +147,7 @@ public class BluetoothService extends Service {
         thread.start();
 
         // Get the HandlerThread's Looper and use it for our Handler
-        serviceLooper = thread.getLooper();
+        Looper serviceLooper = thread.getLooper();
         serviceHandler = new ServiceHandler(serviceLooper);
     }
 
