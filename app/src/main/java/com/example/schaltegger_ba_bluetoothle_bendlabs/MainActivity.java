@@ -21,9 +21,11 @@ import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleSensor;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleSensorObserver;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.BluetoothService;
 
 import java.util.Locale;
@@ -35,73 +37,18 @@ import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCo
 import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_DATA;
 
 
-public class MainActivity extends Activity implements View.OnClickListener, IAngleObserver {
+public class MainActivity extends Activity implements View.OnClickListener, IAngleObserver, IAngleSensorObserver {
 
-    private static BluetoothService service;
     // GUI Components
     private TextView mBluetoothStatus;
     private TextView angle_x;
     private TextView angle_y;
     private LinearLayout angleResult;
     private LinearLayout battery;
-    private AngleObservable angleObservable = AngleObservable.getInstance();
     public final static String IDOFSensor = "FA:0E:BA:83:09:8A";
 
     private final String TAG = MainActivity.class.getSimpleName();
 
-    /** Defines callbacks for service binding, passed to bindService() */
-    private ServiceConnection connection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className,
-                                       IBinder service) {
-            Log.i(TAG,"Service connected");
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
-            BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
-            MainActivity.service = binder.getService();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            Log.i(TAG,"Service disconncted");
-        }
-    };
-
-    // receives Broadcasts
-    final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            assert action != null;
-            switch (action) {
-                case BluetoothAdapter.ACTION_STATE_CHANGED:
-                    final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-                            BluetoothAdapter.ERROR);
-                    switch (state) {
-                        case BluetoothAdapter.STATE_OFF:
-                            displayBluetoothState(false);
-                            break;
-                        case BluetoothAdapter.STATE_ON:
-                            displayBluetoothState(true);
-                            break;
-                    }
-                    break;
-                case ACTION_BATTERY_DATA_AVAILABLE:
-                    showBatteryLevel(intent.getIntExtra(EXTRA_DATA, 0));
-                    break;
-                case ACTION_GATT_CONNECTED:
-                    mBluetoothStatus.setText(R.string.bl_connected);
-                    angleResult.setVisibility(View.VISIBLE);
-                    battery.setVisibility(View.VISIBLE);
-                    break;
-                case ACTION_GATT_DISCONNECTED:
-                    mBluetoothStatus.setText(R.string.bl_disconnected);
-                    break;
-            }
-        }
-
-
-    };
 
     private void showBatteryLevel(int batteryLevel) {
         Toast.makeText(this, "Battery level: "+batteryLevel, Toast.LENGTH_LONG).show();
@@ -111,10 +58,9 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = new Intent(this, BluetoothService.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        AngleSensor.start(this);
+        AngleSensor.registerObserver(this);
 
-        angleObservable.registerObserver(this);
         setContentView(R.layout.activity_main);
 
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
@@ -124,25 +70,7 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
         battery = findViewById(R.id.battery);
 
         // displayBluetoothState(mBTAdapter.getState() == BluetoothAdapter.STATE_ON);
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
-        filter.addAction(ACTION_GATT_CONNECTED);
-        filter.addAction(ACTION_GATT_DISCONNECTED);
-        filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
-        registerReceiver(blEReceiver, filter);
-
-
-        // Ask for location permission if not already allowed
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
-
-        // Ask for location permission if not already allowed
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-
     }
-
 
     private void displayBluetoothState(boolean isOn) {
         mBluetoothStatus.setText(isOn ? getString(R.string.bl_enabled) : getString(R.string.bL_disbaled));
@@ -160,19 +88,12 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     }
 
 
-    private void discover() {
-        // Check if the device is already discovering
-        service.discover();
-    }
-
-
-
 
     @Override
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.connect:
-                discover();
+                AngleSensor.discover();
                 break;
             case R.id.btn_maps:
                 Intent intent = new Intent(this, MapsActivity.class);
@@ -182,11 +103,6 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
 
     }
 
-    @Override
-    public void onAngleDataChanged(AnglePair a) {
-        this.displayAngleData(a);
-    }
-
 
     private void displayAngleData(AnglePair angles) {
         angle_x.setText(String.format(Locale.GERMAN, "%.2f", angles.getX()));
@@ -194,10 +110,36 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        angleObservable.removeObserver(this);
+    public void onAngleDataChanged(AnglePair a) {
+        this.displayAngleData(a);
     }
 
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        AngleSensor.removeObserver(this);
+    }
+
+    @Override
+    public void onBatteryChange(int percent) {
+        showBatteryLevel(percent);
+    }
+
+    @Override
+    public void onDeviceConnected() {
+        mBluetoothStatus.setText(R.string.bl_connected);
+        angleResult.setVisibility(View.VISIBLE);
+        battery.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onDeviceDisconnected() {
+        mBluetoothStatus.setText(R.string.bl_disconnected);
+    }
+
+    @Override
+    public void onBluetoothStateChanged(boolean isOn) {
+        displayBluetoothState(isOn);
+    }
 }
