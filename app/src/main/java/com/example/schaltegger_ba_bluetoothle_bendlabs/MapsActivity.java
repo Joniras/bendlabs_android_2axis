@@ -5,8 +5,8 @@ import android.util.Log;
 
 import androidx.fragment.app.FragmentActivity;
 
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
+import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleSensor;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.DISPLAYFINGER;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.IDisplayFingerObserver;
@@ -47,7 +47,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         ((MyLayout)findViewById(R.id.mylayout)).setMap(mapFragment.getView());
         mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
-        AngleObservable.getInstance().registerObserver(this);
+        AngleSensor.registerObserver(this);
     }
 
     @Override
@@ -65,30 +65,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void checkChange() {
-        /*
-        Version 1
-
-        private float currentZoom = 10;
-    private static final int skipAngles = 0;
-    private static final int skipAnglesAfterMove = 30;
-    private static final float AngleChangeForMove = 10;
-    private static final double zoomFactor = 0.2;
-
-        double change = Math.abs(this.angles.get(0).getY() - this.angles.get((skipAngles) + 1).getY());
-        if (change > AngleChangeForMove) {
-            anglesToSkip = skipAnglesAfterMove;
-            Log.i("Maps", "Change is: " + change + " and thumb is down: " + thumpDown);
-
-            if (thumpDown) {
-                currentZoom += zoomFactor;
-                mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
-            } else {
-                currentZoom -= zoomFactor;
-                mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
-            }
-        }
-        */
-
         double angle = Math.abs(this.angles.get(0).getY());
         if (angle > AngleChangeForMove) {
             anglesToSkip = skipAnglesAfterMove;
@@ -107,7 +83,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AngleObservable.getInstance().removeObserver(this);
+        AngleSensor.removeObserver(this);
         ((MyLayout)findViewById(R.id.mylayout)).removeObserver(this);
     }
 

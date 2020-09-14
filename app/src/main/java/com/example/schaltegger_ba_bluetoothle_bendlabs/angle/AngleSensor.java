@@ -34,7 +34,7 @@ public class AngleSensor {
     private static BluetoothService service;
 
     private static AngleObservable angleObservable = AngleObservable.getInstance();
-    private static ArrayList<IAngleSensorObserver> mObservers;
+    private static ArrayList<IAngleSensorObserver> mObservers = new ArrayList<>();
 
     public static void discover() {
         // Check if the device is already discovering
@@ -89,8 +89,6 @@ public class AngleSensor {
         filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
         context.registerReceiver(blEReceiver, filter);
 
-
-
         // Ask for location permission if not already allowed
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
@@ -123,12 +121,21 @@ public class AngleSensor {
         if(!mObservers.contains(observer)) {
             mObservers.add(observer);
         }
+    }
+
+    public static void registerObserver(IAngleObserver observer) {
+        angleObservable.registerObserver(observer);
 
     }
 
     public static void removeObserver(IAngleSensorObserver observer) {
         angleObservable.removeObserver(observer);
         mObservers.remove(observer);
+    }
+
+
+    public static void removeObserver(IAngleObserver observer) {
+        angleObservable.removeObserver(observer);
     }
 
     public static void notifyBatteryChange(int percent) {

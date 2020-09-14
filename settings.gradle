@@ -1,2 +1,3 @@
+include ':anglesensor'
 rootProject.name='Schaltegger_BA_BluetoothLE_BENDLABS'
 include ':app'

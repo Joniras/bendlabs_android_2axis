@@ -114,13 +114,6 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
         this.displayAngleData(a);
     }
 
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        AngleSensor.removeObserver(this);
-    }
-
     @Override
     public void onBatteryChange(int percent) {
         showBatteryLevel(percent);
@@ -141,5 +134,12 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     @Override
     public void onBluetoothStateChanged(boolean isOn) {
         displayBluetoothState(isOn);
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        AngleSensor.removeObserver(this);
     }
 }
