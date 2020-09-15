@@ -54,19 +54,6 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
         mBluetoothStatus.setText(isOn ? getString(R.string.bl_enabled) : getString(R.string.bL_disbaled));
     }
 
-    // Dialog of wanting to enable bluetooth result
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent Data) {
-        if (requestCode == 1) {
-            if (resultCode == RESULT_OK) {
-                displayBluetoothState(true);
-            } else
-                displayBluetoothState(false);
-        }
-    }
-
-
-
     @Override
     public void onClick(View v) {
         switch(v.getId()){

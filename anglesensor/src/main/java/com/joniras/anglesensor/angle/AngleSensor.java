@@ -37,6 +37,9 @@ public class AngleSensor {
 
     private static String IDOFSensor = "FA:0E:BA:83:09:8A";
 
+    /**
+     * @param id The Hardware-ID as String that should be connected to (defaults to Hardware-ID of Sensor which originally was used)
+     */
     public static void setIDOfSensor(String id){
         IDOFSensor = id;
     }
@@ -45,6 +48,33 @@ public class AngleSensor {
         return IDOFSensor;
     }
 
+    /**
+     * Initialise the Bluetooth Service and check for permissions
+     * @param context for the BluetoothService
+     */
+    public static void start(Activity context) {
+
+        Intent intent = new Intent(context, BluetoothService.class);
+        context.bindService(intent, AngleSensor.connection, Context.BIND_AUTO_CREATE);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
+        filter.addAction(ACTION_GATT_CONNECTED);
+        filter.addAction(ACTION_GATT_DISCONNECTED);
+        filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
+        context.registerReceiver(blEReceiver, filter);
+
+        // Ask for location permission if not already allowed
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+
+    }
+
+    /**
+     * Starts to discover Bluetooth Devices and connects to the IDOFSensor if it is in reach
+     * @throws Exception if service not ready (probably a problem with permission for bluetooth)
+     */
     public static void discover() throws Exception {
         // Check if the device is already discovering
         if(service != null){
@@ -52,6 +82,44 @@ public class AngleSensor {
         }else{
             throw new Exception("Service not ready");
         }
+    }
+
+
+    /**
+     * Register with this function if you want Angle Data and General Data (Batter, etc)
+     * @param observer
+     */
+    public static void registerObserver(IAngleSensorObserver observer) {
+        angleObservable.registerObserver(observer);
+        if(!mObservers.contains(observer)) {
+            mObservers.add(observer);
+        }
+    }
+
+    /**
+     * Register with this function if you only want AngleData
+     * @param observer
+     */
+    public static void registerObserver(IAngleObserver observer) {
+        angleObservable.registerObserver(observer);
+
+    }
+
+    /**
+     * Removes the observer from the notification list
+     * @param observer
+     */
+    public static void removeObserver(IAngleSensorObserver observer) {
+        angleObservable.removeObserver(observer);
+        mObservers.remove(observer);
+    }
+
+    /**
+     * Removes the observer from the notification list
+     * @param observer
+     */
+    public static void removeObserver(IAngleObserver observer) {
+        angleObservable.removeObserver(observer);
     }
 
 
@@ -89,30 +157,10 @@ public class AngleSensor {
 
     };
 
-    public static void start(Activity context) {
 
-        Intent intent = new Intent(context, BluetoothService.class);
-        context.bindService(intent, AngleSensor.connection, Context.BIND_AUTO_CREATE);
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
-        filter.addAction(ACTION_GATT_CONNECTED);
-        filter.addAction(ACTION_GATT_DISCONNECTED);
-        filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
-        context.registerReceiver(blEReceiver, filter);
-
-
-        // Ask for location permission if not already allowed
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
-
-
-    }
 
     /** Defines callbacks for service binding, passed to bindService() */
     private static ServiceConnection connection = new ServiceConnection() {
-
 
         @Override
         public void onServiceConnected(ComponentName className,
@@ -140,27 +188,6 @@ public class AngleSensor {
 
     };
 
-    public static void registerObserver(IAngleSensorObserver observer) {
-        angleObservable.registerObserver(observer);
-        if(!mObservers.contains(observer)) {
-            mObservers.add(observer);
-        }
-    }
-
-    public static void registerObserver(IAngleObserver observer) {
-        angleObservable.registerObserver(observer);
-
-    }
-
-    public static void removeObserver(IAngleSensorObserver observer) {
-        angleObservable.removeObserver(observer);
-        mObservers.remove(observer);
-    }
-
-
-    public static void removeObserver(IAngleObserver observer) {
-        angleObservable.removeObserver(observer);
-    }
 
     private static void notifyBatteryChange(int percent) {
         for (IAngleSensorObserver observer: mObservers) {
