@@ -1,4 +1,4 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs.angle;
+package com.joniras.anglesensor.angle;
 
 import java.util.ArrayList;
 

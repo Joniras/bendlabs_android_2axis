@@ -1,4 +1,4 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs.angle;
+package com.joniras.anglesensor.angle;
 
 public class AnglePair {
     private float x;
@@ -18,4 +18,11 @@ public class AnglePair {
         return y;
     }
 
+    @Override
+    public String toString() {
+        return "AnglePair{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
+    }
 }

@@ -5,10 +5,7 @@
     <string name="bl_not_found">Status: Bluetooth not found</string>
     <string name="bl_connecting">Connecting…</string>
     <string name="bl_show_paired">Show Paired Devices</string>
-    <string name="bl_not_on">Bluetooth not on</string>
-    <string name="bl_discovery_started">Discovery started</string>
-    <string name="bl_discovery_stopped">Discovery stopped</string>
-    <string name="bl_turned_off">Bluetooth turned Off</string>
+
     <string name="only_ble">Only BLE Devices supported</string>
     <string name="bl_enabled">Bluetooth enabled</string>
     <string name="bL_disbaled">Bluetooth disabled</string>

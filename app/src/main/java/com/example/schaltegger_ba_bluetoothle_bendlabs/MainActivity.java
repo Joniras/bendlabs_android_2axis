@@ -1,40 +1,19 @@
 package com.example.schaltegger_ba_bluetoothle_bendlabs;
 
-import android.Manifest;
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleSensor;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleSensorObserver;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.BluetoothService;
+import com.joniras.anglesensor.angle.AnglePair;
+import com.joniras.anglesensor.angle.AngleSensor;
+import com.joniras.anglesensor.angle.IAngleObserver;
+import com.joniras.anglesensor.angle.IAngleSensorObserver;
 
 import java.util.Locale;
-
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_BATTERY_DATA_AVAILABLE;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_GATT_CONNECTED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_GATT_DISCONNECTED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_DATA;
 
 
 public class MainActivity extends Activity implements View.OnClickListener, IAngleObserver, IAngleSensorObserver {
@@ -45,7 +24,6 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     private TextView angle_y;
     private LinearLayout angleResult;
     private LinearLayout battery;
-    public final static String IDOFSensor = "FA:0E:BA:83:09:8A";
 
     private final String TAG = MainActivity.class.getSimpleName();
 
@@ -93,7 +71,11 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.connect:
-                AngleSensor.discover();
+                try {
+                    AngleSensor.discover();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 break;
             case R.id.btn_maps:
                 Intent intent = new Intent(this, MapsActivity.class);

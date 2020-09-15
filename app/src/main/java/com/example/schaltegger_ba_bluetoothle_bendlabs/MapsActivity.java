@@ -5,10 +5,10 @@ import android.util.Log;
 
 import androidx.fragment.app.FragmentActivity;
 
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleSensor;
+import com.joniras.anglesensor.angle.AnglePair;
+import com.joniras.anglesensor.angle.AngleSensor;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.DISPLAYFINGER;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.IAngleObserver;
+import com.joniras.anglesensor.angle.IAngleObserver;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.IDisplayFingerObserver;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;

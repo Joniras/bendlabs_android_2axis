@@ -25,7 +25,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <service
-            android:name=".bluetooth.BluetoothService"
+            android:name="com.joniras.anglesensor.bluetooth.BluetoothService"
             android:enabled="true"
             android:exported="true" />
         <!--

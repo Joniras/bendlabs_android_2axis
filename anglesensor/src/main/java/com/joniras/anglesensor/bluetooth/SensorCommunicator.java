@@ -1,4 +1,4 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth;
+package com.joniras.anglesensor.bluetooth;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;

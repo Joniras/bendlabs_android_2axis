@@ -1,6 +1,6 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs.angle;
+package com.joniras.anglesensor.angle;
 
-public interface IAngleObservable {
+interface IAngleObservable {
     void registerObserver(IAngleObserver angleObserver);
     void removeObserver(IAngleObserver angleObserver);
     void notifyObservers();

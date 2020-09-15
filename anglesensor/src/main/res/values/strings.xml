@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bl_discovery_started">Discovery started</string>
+    <string name="bl_discovery_stopped">Discovery stopped</string>
+    <string name="bl_turned_off">Bluetooth turned Off</string>
+    <string name="bl_not_on">Bluetooth not on</string>
+</resources>

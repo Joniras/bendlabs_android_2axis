@@ -1,6 +1,7 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs.angle;
+package com.joniras.anglesensor.angle;
 
 import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -11,22 +12,19 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.View;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.example.schaltegger_ba_bluetoothle_bendlabs.MainActivity;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.R;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.BluetoothService;
+import com.joniras.anglesensor.bluetooth.BluetoothService;
 
 import java.util.ArrayList;
 
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_BATTERY_DATA_AVAILABLE;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_GATT_CONNECTED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_GATT_DISCONNECTED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_DATA;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_BATTERY_DATA_AVAILABLE;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_GATT_CONNECTED;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_GATT_DISCONNECTED;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.EXTRA_DATA;
 
 public class AngleSensor {
     private static final String TAG = "AngleSensor";
@@ -36,14 +34,29 @@ public class AngleSensor {
     private static AngleObservable angleObservable = AngleObservable.getInstance();
     private static ArrayList<IAngleSensorObserver> mObservers = new ArrayList<>();
 
-    public static void discover() {
+
+    private static String IDOFSensor = "FA:0E:BA:83:09:8A";
+
+    public static void setIDOfSensor(String id){
+        IDOFSensor = id;
+    }
+
+    public static String getIDOFSensor() {
+        return IDOFSensor;
+    }
+
+    public static void discover() throws Exception {
         // Check if the device is already discovering
-        service.discover();
+        if(service != null){
+            service.discover();
+        }else{
+            throw new Exception("Service not ready");
+        }
     }
 
 
     // receives Broadcasts
-   static final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
+   private static final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -76,7 +89,7 @@ public class AngleSensor {
 
     };
 
-    public static void start(MainActivity context) {
+    public static void start(Activity context) {
 
         Intent intent = new Intent(context, BluetoothService.class);
         context.bindService(intent, AngleSensor.connection, Context.BIND_AUTO_CREATE);
@@ -89,17 +102,17 @@ public class AngleSensor {
         filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
         context.registerReceiver(blEReceiver, filter);
 
-        // Ask for location permission if not already allowed
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
 
         // Ask for location permission if not already allowed
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+
+
     }
 
     /** Defines callbacks for service binding, passed to bindService() */
     private static ServiceConnection connection = new ServiceConnection() {
+
 
         @Override
         public void onServiceConnected(ComponentName className,
@@ -114,6 +127,17 @@ public class AngleSensor {
         public void onServiceDisconnected(ComponentName arg0) {
             Log.i(TAG,"Service disconncted");
         }
+
+        @Override
+        public void onBindingDied(ComponentName name) {
+            Log.i(TAG,"Service binding died");
+        }
+
+        @Override
+        public void onNullBinding(ComponentName name) {
+            Log.i(TAG,"Service NULL binding");
+        }
+
     };
 
     public static void registerObserver(IAngleSensorObserver observer) {
@@ -138,23 +162,23 @@ public class AngleSensor {
         angleObservable.removeObserver(observer);
     }
 
-    public static void notifyBatteryChange(int percent) {
+    private static void notifyBatteryChange(int percent) {
         for (IAngleSensorObserver observer: mObservers) {
             observer.onBatteryChange(percent);
         }
     }
 
-    public static void notifyDeviceConnected(){
+    private static void notifyDeviceConnected(){
         for (IAngleSensorObserver observer: mObservers) {
             observer.onDeviceConnected();
         }
     }
-    public static void notifyDeviceDisconnected(){
+    private static void notifyDeviceDisconnected(){
         for (IAngleSensorObserver observer: mObservers) {
             observer.onDeviceDisconnected();
         }
     }
-    public static void notifyBluetoothStateChanged(boolean isOn){
+    private static void notifyBluetoothStateChanged(boolean isOn){
         for (IAngleSensorObserver observer: mObservers) {
             observer.onBluetoothStateChanged(isOn);
         }

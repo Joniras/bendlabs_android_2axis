@@ -1,4 +1,4 @@
-package com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth;
+package com.joniras.anglesensor.bluetooth;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -17,17 +17,17 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.example.schaltegger_ba_bluetoothle_bendlabs.MainActivity;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.R;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AnglePair;
-import com.example.schaltegger_ba_bluetoothle_bendlabs.angle.AngleObservable;
+import com.joniras.anglesensor.R;
+import com.joniras.anglesensor.angle.AnglePair;
+import com.joniras.anglesensor.angle.AngleObservable;
+import com.joniras.anglesensor.angle.AngleSensor;
 
 import java.util.Objects;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_ANGLE_0;
-import static com.example.schaltegger_ba_bluetoothle_bendlabs.bluetooth.SensorCommunicator.EXTRA_ANGLE_1;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.EXTRA_ANGLE_0;
+import static com.joniras.anglesensor.bluetooth.SensorCommunicator.EXTRA_ANGLE_1;
 
 public class BluetoothService extends Service {
     private ServiceHandler serviceHandler;
@@ -39,7 +39,7 @@ public class BluetoothService extends Service {
         public void onReceive(Context context, Intent intent) {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             assert device != null;
-            if (device.getAddress().equals(MainActivity.IDOFSensor)) {
+            if (device.getAddress().equals(AngleSensor.getIDOFSensor())) {
                 connect(device.getAddress());
             }
         }
