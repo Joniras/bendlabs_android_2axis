@@ -25,7 +25,7 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     private LinearLayout battery;
 
     private final String TAG = MainActivity.class.getSimpleName();
-
+    private AngleSensor angleSensor = AngleSensor.getInstance();
 
     private void showBatteryLevel(int batteryLevel) {
         Toast.makeText(this, "Battery level: "+batteryLevel, Toast.LENGTH_LONG).show();
@@ -35,8 +35,8 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AngleSensor.start(this);
-        AngleSensor.registerObserver(this);
+        angleSensor.start(this);
+        angleSensor.registerObserver(this);
 
         setContentView(R.layout.activity_main);
 
@@ -58,7 +58,7 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
         switch(v.getId()){
             case R.id.connect:
                 try {
-                    AngleSensor.discover();
+                    angleSensor.discover();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -108,6 +108,6 @@ public class MainActivity extends Activity implements View.OnClickListener, IAng
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AngleSensor.removeObserver(this);
+        angleSensor.removeObserver(this);
     }
 }

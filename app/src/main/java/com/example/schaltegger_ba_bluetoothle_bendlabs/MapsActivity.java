@@ -13,10 +13,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.joniras.anglesensor.angle.interfaces.IAngleObserver;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver, IAngleObserver {
 
     private GoogleMap mMap;
     private DISPLAYFINGER currentFinger = DISPLAYFINGER.OFF;
@@ -46,7 +47,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         ((MyLayout)findViewById(R.id.mylayout)).setMap(mapFragment.getView());
         mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
-        AngleSensor.registerObserver(this);
+        AngleSensor.getInstance().registerObserver(this);
     }
 
     @Override
@@ -82,7 +83,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        AngleSensor.removeObserver(this);
+        AngleSensor.getInstance().removeObserver(this);
         ((MyLayout)findViewById(R.id.mylayout)).removeObserver(this);
     }
 
