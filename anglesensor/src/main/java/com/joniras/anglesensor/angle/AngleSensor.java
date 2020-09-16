@@ -16,35 +16,43 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.joniras.anglesensor.bluetooth.BluetoothService;
+import com.joniras.anglesensor.angle.interfaces.IAngleSensorObserver;
 
 import java.util.ArrayList;
 
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_BATTERY_DATA_AVAILABLE;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_GATT_CONNECTED;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_GATT_DISCONNECTED;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.EXTRA_DATA;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_BATTERY_DATA_AVAILABLE;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_CONNECTED;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_DISCONNECTED;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
+import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_BATTERY;
 
 public class AngleSensor {
     private static final String TAG = "AngleSensor";
 
+    private static final AngleSensor instance = new AngleSensor();
+
     private static BluetoothService service;
 
-    private static AngleObservable angleObservable = AngleObservable.getInstance();
     private static ArrayList<IAngleSensorObserver> mObservers = new ArrayList<>();
 
 
-    private static String IDOFSensor = "FA:0E:BA:83:09:8A";
+    public static AngleSensor getInstance() {
+        return instance;
+    }
+
+    /**
+     * The Sensor from the AAU with the Inventory number "ISYS-2019-122"
+     */
+    private String IDOFSensor = "FA:0E:BA:83:09:8A";
 
     /**
      * @param id The Hardware-ID as String that should be connected to (defaults to Hardware-ID of Sensor which originally was used)
      */
-    public static void setIDOfSensor(String id){
+    public void setIDOfSensor(String id){
         IDOFSensor = id;
     }
 
-    public static String getIDOFSensor() {
+    public String getIDOFSensor() {
         return IDOFSensor;
     }
 
@@ -52,11 +60,12 @@ public class AngleSensor {
      * Initialise the Bluetooth Service and check for permissions
      * @param context for the BluetoothService
      */
-    public static void start(Activity context) {
-
+    public void start(Activity context) {
+        // start the Bluetooth service and bind it to the Activity
         Intent intent = new Intent(context, BluetoothService.class);
-        context.bindService(intent, AngleSensor.connection, Context.BIND_AUTO_CREATE);
+        context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
 
+        // register the Receivver for the Broadcasts
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
@@ -75,12 +84,12 @@ public class AngleSensor {
      * Starts to discover Bluetooth Devices and connects to the IDOFSensor if it is in reach
      * @throws Exception if service not ready (probably a problem with permission for bluetooth)
      */
-    public static void discover() throws Exception {
-        // Check if the device is already discovering
+    public void discover() throws Exception {
+        // If service is null probably something with permissions is wrong
         if(service != null){
             service.discover();
         }else{
-            throw new Exception("Service not ready");
+            throw new Exception("Service not ready (Permission failure)");
         }
     }
 
@@ -89,47 +98,32 @@ public class AngleSensor {
      * Register with this function if you want Angle Data and General Data (Batter, etc)
      * @param observer
      */
-    public static void registerObserver(IAngleSensorObserver observer) {
-        angleObservable.registerObserver(observer);
+    public void registerObserver(IAngleSensorObserver observer) {
         if(!mObservers.contains(observer)) {
             mObservers.add(observer);
         }
     }
 
-    /**
-     * Register with this function if you only want AngleData
-     * @param observer
-     */
-    public static void registerObserver(IAngleObserver observer) {
-        angleObservable.registerObserver(observer);
-
-    }
 
     /**
      * Removes the observer from the notification list
      * @param observer
      */
-    public static void removeObserver(IAngleSensorObserver observer) {
-        angleObservable.removeObserver(observer);
+    public void removeObserver(IAngleSensorObserver observer) {
         mObservers.remove(observer);
     }
 
     /**
-     * Removes the observer from the notification list
-     * @param observer
+     * Object that receives the Broadcasts from the BluetoothAdapter (State changes) and the SensorCommunicator (Data changes)
+     * forwards the events to the observer
      */
-    public static void removeObserver(IAngleObserver observer) {
-        angleObservable.removeObserver(observer);
-    }
-
-
-    // receives Broadcasts
-   private static final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
+   private final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             assert action != null;
             switch (action) {
+                // If Bluetooth is On Or Of
                 case BluetoothAdapter.ACTION_STATE_CHANGED:
                     final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
                             BluetoothAdapter.ERROR);
@@ -143,7 +137,7 @@ public class AngleSensor {
                     }
                     break;
                 case ACTION_BATTERY_DATA_AVAILABLE:
-                    notifyBatteryChange(intent.getIntExtra(EXTRA_DATA, 0));
+                    notifyBatteryChange(intent.getIntExtra(EXTRA_BATTERY, 0));
                     break;
                 case ACTION_GATT_CONNECTED:
                     notifyDeviceConnected();
@@ -153,20 +147,16 @@ public class AngleSensor {
                     break;
             }
         }
-
-
     };
 
-
-
     /** Defines callbacks for service binding, passed to bindService() */
-    private static ServiceConnection connection = new ServiceConnection() {
+    private ServiceConnection connection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className,
                                        IBinder service) {
             Log.i(TAG,"Service connected");
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            // Bind Service to Activity
             BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
             AngleSensor.service = binder.getService();
         }
@@ -188,26 +178,51 @@ public class AngleSensor {
 
     };
 
-
-    private static void notifyBatteryChange(int percent) {
+    /**
+     * Notify all Observer about Battery Status
+     * @param percent
+     */
+    private void notifyBatteryChange(int percent) {
         for (IAngleSensorObserver observer: mObservers) {
             observer.onBatteryChange(percent);
         }
     }
 
-    private static void notifyDeviceConnected(){
+    /**
+     * Notify all Observer when a device has connected
+     */
+    private void notifyDeviceConnected(){
         for (IAngleSensorObserver observer: mObservers) {
             observer.onDeviceConnected();
         }
     }
-    private static void notifyDeviceDisconnected(){
+
+    /**
+     * Notify all Observer when a device has disconnected
+     */
+    private void notifyDeviceDisconnected(){
         for (IAngleSensorObserver observer: mObservers) {
             observer.onDeviceDisconnected();
         }
     }
-    private static void notifyBluetoothStateChanged(boolean isOn){
+
+    /**
+     * Notify all Observer when Bluetooth State changed (on or off)
+     * @param isOn
+     */
+    private void notifyBluetoothStateChanged(boolean isOn){
         for (IAngleSensorObserver observer: mObservers) {
             observer.onBluetoothStateChanged(isOn);
+        }
+    }
+
+    /**
+     * Notify all Observer about new AngleData
+     * @param anglePair
+     */
+    void notifyAngleDataChanged(AnglePair anglePair){
+        for (IAngleSensorObserver observer: mObservers) {
+            observer.onAngleDataChanged(anglePair);
         }
     }
 

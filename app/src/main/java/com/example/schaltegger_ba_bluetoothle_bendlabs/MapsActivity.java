@@ -8,7 +8,6 @@ import androidx.fragment.app.FragmentActivity;
 import com.joniras.anglesensor.angle.AnglePair;
 import com.joniras.anglesensor.angle.AngleSensor;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.DISPLAYFINGER;
-import com.joniras.anglesensor.angle.IAngleObserver;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.IDisplayFingerObserver;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -17,7 +16,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IAngleObserver, IDisplayFingerObserver {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver {
 
     private GoogleMap mMap;
     private DISPLAYFINGER currentFinger = DISPLAYFINGER.OFF;

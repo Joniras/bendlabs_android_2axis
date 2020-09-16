@@ -1,4 +1,4 @@
-package com.joniras.anglesensor.bluetooth;
+package com.joniras.anglesensor.angle;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -16,6 +16,10 @@ import java.util.Arrays;
 import java.util.UUID;
 
 
+/**
+ * Class that is responsible for communication with the Sensor
+ * Also holds all the necessary UUIDs
+ */
 public class SensorCommunicator extends BluetoothGattCallback {
     private final String TAG = SensorCommunicator.class.getSimpleName();
     private final BluetoothGatt bluetoothGatt;
@@ -29,12 +33,12 @@ public class SensorCommunicator extends BluetoothGattCallback {
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
     public final static String ACTION_BATTERY_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_BATTERY_DATA_AVAILABLE";
-    public final static String EXTRA_DATA =
-            "com.example.bluetooth.le.EXTRA_DATA";
-    public final static String EXTRA_ANGLE_0 =
-            "com.example.bluetooth.le.EXTRA_ANGLE_0";
-    public final static String EXTRA_ANGLE_1 =
-            "com.example.bluetooth.le.EXTRA_ANGLE_1";
+    public final static String EXTRA_BATTERY =
+            "com.example.bluetooth.le.EXTRA_BATTERY";
+    public final static String EXTRA_ANGLE_X =
+            "com.example.bluetooth.le.EXTRA_ANGLE_X";
+    public final static String EXTRA_ANGLE_Y =
+            "com.example.bluetooth.le.EXTRA_ANGLE_Y";
     public final static String ACTION_GATT_SERVICES_DISCOVERED =
             "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
 
@@ -98,9 +102,6 @@ public class SensorCommunicator extends BluetoothGattCallback {
 
             readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
             // https://medium.com/@martijn.van.welie/making-android-ble-work-part-3-117d3a8aee23
-
-            // turnOnNotifications(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY, BLDESCRIPTOR_B_BATTERY);
-
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
             Log.i(TAG, "Attempting to start service discovery:" +
@@ -138,7 +139,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
                 final byte[] data = characteristic.getValue();
                 // Log.i(TAG,"Received: "+ Arrays.toString(data));
                 if (data.length > 0) {
-                    intent.putExtra(EXTRA_DATA, ((data[0] & 0xFF)));
+                    intent.putExtra(EXTRA_BATTERY, ((data[0] & 0xFF)));
                 }
                 sendBroadcast(intent);
             } else {
@@ -147,6 +148,11 @@ public class SensorCommunicator extends BluetoothGattCallback {
         }
     }
 
+    /**
+     * Function gets called when a characteristic that has turned on notification changes
+     * @param gatt the gatt service
+     * @param characteristic the characteristic that changed
+     */
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt,
                                         BluetoothGattCharacteristic characteristic) {
@@ -155,8 +161,8 @@ public class SensorCommunicator extends BluetoothGattCallback {
             float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
             Intent intent = new Intent(ACTION_ANGLE_DATA_AVAILABLE);
-            intent.putExtra(EXTRA_ANGLE_0, a0);
-            intent.putExtra(EXTRA_ANGLE_1, a1);
+            intent.putExtra(EXTRA_ANGLE_X, a0);
+            intent.putExtra(EXTRA_ANGLE_Y, a1);
             sendBroadcast(intent);
         } else {
             UUID uuid = characteristic.getUuid();
@@ -164,7 +170,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
         }
     }
 
-
+    // function to generate a SIG compatible UUID from a Number
     private static UUID convertFromInteger(int i) {
         final long MSB = 0x0000000000001000L;
         final long LSB = 0x800000805f9b34fbL;

@@ -10,13 +10,12 @@ import android.widget.Toast;
 
 import com.joniras.anglesensor.angle.AnglePair;
 import com.joniras.anglesensor.angle.AngleSensor;
-import com.joniras.anglesensor.angle.IAngleObserver;
-import com.joniras.anglesensor.angle.IAngleSensorObserver;
+import com.joniras.anglesensor.angle.interfaces.IAngleSensorObserver;
 
 import java.util.Locale;
 
 
-public class MainActivity extends Activity implements View.OnClickListener, IAngleObserver, IAngleSensorObserver {
+public class MainActivity extends Activity implements View.OnClickListener, IAngleSensorObserver {
 
     // GUI Components
     private TextView mBluetoothStatus;

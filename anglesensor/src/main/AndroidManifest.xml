@@ -3,7 +3,7 @@
 
     <application>
         <service
-            android:name="com.joniras.anglesensor.bluetooth.BluetoothService"
+            android:name="com.joniras.anglesensor.angle.BluetoothService"
             android:enabled="true"
             android:exported="true" />
     </application>

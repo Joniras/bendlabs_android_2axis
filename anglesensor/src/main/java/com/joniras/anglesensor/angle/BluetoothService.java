@@ -1,4 +1,4 @@
-package com.joniras.anglesensor.bluetooth;
+package com.joniras.anglesensor.angle;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -18,28 +18,32 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.joniras.anglesensor.R;
-import com.joniras.anglesensor.angle.AnglePair;
-import com.joniras.anglesensor.angle.AngleObservable;
-import com.joniras.anglesensor.angle.AngleSensor;
 
 import java.util.Objects;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.EXTRA_ANGLE_0;
-import static com.joniras.anglesensor.bluetooth.SensorCommunicator.EXTRA_ANGLE_1;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
+import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_X;
+import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
 
+/**
+ * Service that Communicates with the Bluetooth Thread
+ */
 public class BluetoothService extends Service {
     private ServiceHandler serviceHandler;
     private final IBinder binder = new LocalBinder();
-    private AngleObservable angleObservable = AngleObservable.getInstance();
+    private AngleSensor angleSensor = AngleSensor.getInstance();
 
+    /**
+     * Receive the Broadcast when a bluetooth device was found
+     * Connects to the Sensor if it was found (by ID)
+     */
     final BroadcastReceiver blReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             assert device != null;
-            if (device.getAddress().equals(AngleSensor.getIDOFSensor())) {
+            if (device.getAddress().equals(angleSensor.getIDOFSensor())) {
                 connect(device.getAddress());
             }
         }
@@ -49,6 +53,7 @@ public class BluetoothService extends Service {
         registerReceiver(blReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
         sendToThread("discover");
     }
+
     // receives Broadcasts
     final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
         @Override
@@ -56,14 +61,14 @@ public class BluetoothService extends Service {
             String action = intent.getAction();
             assert action != null;
             if (ACTION_ANGLE_DATA_AVAILABLE.equals(action)) {
-                processAngleData(intent.getFloatExtra(EXTRA_ANGLE_0, 0), intent.getFloatExtra(EXTRA_ANGLE_1, 0));
+                processAngleData(intent.getFloatExtra(EXTRA_ANGLE_X, 0), intent.getFloatExtra(EXTRA_ANGLE_Y, 0));
             }
         }
     };
 
 
     private void processAngleData(float angleX, float angleY) {
-        angleObservable.onNext(new AnglePair(angleX,angleY));
+        angleSensor.notifyAngleDataChanged(new AnglePair(angleX,angleY));
     }
 
     public BluetoothService() {
@@ -85,12 +90,17 @@ public class BluetoothService extends Service {
             }
         }
 
+        /**
+         * Function that receives all the messages from the service
+         * @param msg that comes from the Service to the Thread
+         */
         @Override
         public void handleMessage(Message msg) {
             switch (Objects.requireNonNull(msg.getData().getString("ACTION"))) {
                 case "connect":
                     String address = msg.getData().getString("address");
                     Log.i("Thread", "Connecting to: " + address);
+                    //launch the SensorCommunicator who is responsible for the communication to the Sensor
                     new SensorCommunicator(mBTAdapter.getRemoteDevice(address), BluetoothService.this);
                     break;
                 case "discover":
@@ -140,27 +150,23 @@ public class BluetoothService extends Service {
     }
 
 
+    /**
+     * Function gets called when the Service is started
+     *
+     */
     @Override
     public void onCreate() {
-        HandlerThread thread = new HandlerThread("AngleThread",
-                THREAD_PRIORITY_BACKGROUND);
+        //start Thread that Handles the communication with the Sensor (Service gets maybe killed when switchgin activities)
+        HandlerThread thread = new HandlerThread("AngleThread", THREAD_PRIORITY_BACKGROUND);
         thread.start();
 
-        // Get the HandlerThread's Looper and use it for our Handler
-        Looper serviceLooper = thread.getLooper();
-        serviceHandler = new ServiceHandler(serviceLooper);
+        // the handler is used to communicate with the Thread
+        serviceHandler = new ServiceHandler(thread.getLooper());
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
-        // For each start request, send a message to start a job and deliver the
-        // start ID so we know which request we're stopping when we finish the job
-        Message msg = serviceHandler.obtainMessage();
-        msg.arg1 = startId;
-        serviceHandler.sendMessage(msg);
-
-        // If we get killed, after returning from here, restart
+        // Telling the system that we start and stop by ourselves
         return START_STICKY;
     }
 
