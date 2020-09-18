@@ -13,11 +13,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.joniras.anglesensor.angle.interfaces.IAngleObserver;
+import com.joniras.anglesensor.angle.interfaces.IAngleDataObserver;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver, IAngleObserver {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver, IAngleDataObserver {
 
     private GoogleMap mMap;
     private DISPLAYFINGER currentFinger = DISPLAYFINGER.OFF;

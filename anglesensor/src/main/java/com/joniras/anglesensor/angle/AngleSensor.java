@@ -16,8 +16,8 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.joniras.anglesensor.angle.interfaces.IAngleObserver;
-import com.joniras.anglesensor.angle.interfaces.IAngleSensorObserver;
+import com.joniras.anglesensor.angle.interfaces.IAngleDataObserver;
+import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 
 import java.util.ArrayList;
 
@@ -34,9 +34,8 @@ public class AngleSensor {
 
     private static BluetoothService service;
 
-    private static ArrayList<IAngleSensorObserver> angleSensorObservers = new ArrayList<>();
-    private static ArrayList<IAngleObserver> angleObservers = new ArrayList<>();
-
+    private static ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
+    private static ArrayList<IAngleDataObserver> angleObservers = new ArrayList<>();
 
     public static AngleSensor getInstance() {
         return instance;
@@ -79,7 +78,6 @@ public class AngleSensor {
         // Ask for location permission if not already allowed
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
-
     }
 
     /**
@@ -100,7 +98,7 @@ public class AngleSensor {
      * Register with this function if you want Angle Data and General Data (Batter, etc)
      * @param observer
      */
-    public void registerObserver(IAngleSensorObserver observer) {
+    public void registerObserver(ISensorDataObserver observer) {
         if(!angleSensorObservers.contains(observer)) {
             angleSensorObservers.add(observer);
         }
@@ -111,7 +109,7 @@ public class AngleSensor {
      * Removes the observer from the notification list
      * @param observer
      */
-    public void removeObserver(IAngleSensorObserver observer) {
+    public void removeObserver(ISensorDataObserver observer) {
         angleSensorObservers.remove(observer);
     }
 
@@ -119,7 +117,7 @@ public class AngleSensor {
      * Register with this function if you want only Angle Data
      * @param observer
      */
-    public void registerObserver(IAngleObserver observer) {
+    public void registerObserver(IAngleDataObserver observer) {
         if(!angleObservers.contains(observer)) {
             angleObservers.add(observer);
         }
@@ -130,7 +128,7 @@ public class AngleSensor {
      * Removes the observer from the notification list
      * @param observer
      */
-    public void removeObserver(IAngleObserver observer) {
+    public void removeObserver(IAngleDataObserver observer) {
         angleObservers.remove(observer);
     }
 
@@ -204,7 +202,7 @@ public class AngleSensor {
      * @param percent
      */
     private void notifyBatteryChange(int percent) {
-        for (IAngleSensorObserver observer: angleSensorObservers) {
+        for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onBatteryChange(percent);
         }
     }
@@ -213,7 +211,7 @@ public class AngleSensor {
      * Notify all Observer when a device has connected
      */
     private void notifyDeviceConnected(){
-        for (IAngleSensorObserver observer: angleSensorObservers) {
+        for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onDeviceConnected();
         }
     }
@@ -222,7 +220,7 @@ public class AngleSensor {
      * Notify all Observer when a device has disconnected
      */
     private void notifyDeviceDisconnected(){
-        for (IAngleSensorObserver observer: angleSensorObservers) {
+        for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onDeviceDisconnected();
         }
     }
@@ -232,7 +230,7 @@ public class AngleSensor {
      * @param isOn
      */
     private void notifyBluetoothStateChanged(boolean isOn){
-        for (IAngleSensorObserver observer: angleSensorObservers) {
+        for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onBluetoothStateChanged(isOn);
         }
     }
@@ -242,10 +240,10 @@ public class AngleSensor {
      * @param anglePair
      */
     void notifyAngleDataChanged(AnglePair anglePair){
-        for (IAngleSensorObserver observer: angleSensorObservers) {
+        for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onAngleDataChanged(anglePair);
         }
-        for (IAngleObserver observer: angleObservers) {
+        for (IAngleDataObserver observer: angleObservers) {
             observer.onAngleDataChanged(anglePair);
         }
     }

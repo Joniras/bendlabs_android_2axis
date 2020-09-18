@@ -1,8 +1,6 @@
 package com.joniras.anglesensor.angle.interfaces;
 
-import com.joniras.anglesensor.angle.AnglePair;
-
-public interface IAngleSensorObserver extends IAngleObserver{
+public interface ISensorDataObserver extends IAngleDataObserver {
     void onBatteryChange(int percent);
     void onDeviceConnected();
     void onDeviceDisconnected();

@@ -99,9 +99,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
             Log.w(TAG, "onServicesDiscovered success");
             sendBroadcast(new Intent(ACTION_GATT_CONNECTED));
             sendBroadcast(new Intent(ACTION_GATT_SERVICES_DISCOVERED));
-
             readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
-            // https://medium.com/@martijn.van.welie/making-android-ble-work-part-3-117d3a8aee23
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
             Log.i(TAG, "Attempting to start service discovery:" +
@@ -126,7 +124,6 @@ public class SensorCommunicator extends BluetoothGattCallback {
         desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         gatt.writeDescriptor(desc);
     }
-
 
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
