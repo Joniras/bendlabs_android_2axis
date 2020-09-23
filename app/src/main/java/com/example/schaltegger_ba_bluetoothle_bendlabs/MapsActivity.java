@@ -1,10 +1,19 @@
 package com.example.schaltegger_ba_bluetoothle_bendlabs;
 
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.joniras.anglesensor.angle.AnglePair;
 import com.joniras.anglesensor.angle.AngleSensor;
 import com.example.schaltegger_ba_bluetoothle_bendlabs.finger.DISPLAYFINGER;
@@ -29,6 +38,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<AnglePair> angles = new ArrayList<>();
     private int anglesToSkip = 0;
     private SupportMapFragment mapFragment;
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +51,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         ((MyLayout)findViewById(R.id.mylayout)).registerObserver(this);
+
+        // Construct a FusedLocationProviderClient.
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
     @Override
@@ -47,7 +61,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         ((MyLayout)findViewById(R.id.mylayout)).setMap(mapFragment.getView());
         mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
+        getDeviceLocation();
         AngleSensor.getInstance().registerObserver(this);
+        // register manual zoom and save it
+        mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition pos) {
+                if (pos.zoom != currentZoom){
+                    currentZoom = pos.zoom;
+                }
+            }
+        });
+    }
+
+    private void getDeviceLocation() {
+        try {
+                Task<Location> locationResult = mFusedLocationProviderClient.getLastLocation();
+                locationResult.addOnCompleteListener(this, new OnCompleteListener<Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Location> task) {
+                        if (task.isSuccessful()) {
+                            // Set the map's camera position to the current location of the device.
+                            Location lastKnownLocation = task.getResult();
+                            if (lastKnownLocation != null) {
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                        new LatLng(lastKnownLocation.getLatitude(),
+                                                lastKnownLocation.getLongitude()), currentZoom));
+                            }
+                        }
+                    }
+                });
+
+        } catch (SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage(), e);
+        }
     }
 
     @Override
