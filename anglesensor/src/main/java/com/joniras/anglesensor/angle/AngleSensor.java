@@ -21,7 +21,6 @@ import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 
 import java.util.ArrayList;
 
-import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_BATTERY_DATA_AVAILABLE;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_CONNECTED;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_DISCONNECTED;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
@@ -69,7 +68,6 @@ public class AngleSensor {
         // register the Receivver for the Broadcasts
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(ACTION_BATTERY_DATA_AVAILABLE);
         filter.addAction(ACTION_GATT_CONNECTED);
         filter.addAction(ACTION_GATT_DISCONNECTED);
         filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
@@ -224,9 +222,6 @@ public class AngleSensor {
                             break;
                     }
                     break;
-                case ACTION_BATTERY_DATA_AVAILABLE:
-                    notifyBatteryChange(intent.getIntExtra(EXTRA_BATTERY, 0));
-                    break;
                 case ACTION_GATT_CONNECTED:
                     notifyDeviceConnected();
                     break;
@@ -266,15 +261,6 @@ public class AngleSensor {
 
     };
 
-    /**
-     * Notify all Observer about Battery Status
-     * @param percent
-     */
-    private void notifyBatteryChange(int percent) {
-        for (ISensorDataObserver observer: angleSensorObservers) {
-            observer.onBatteryChange(percent);
-        }
-    }
 
     /**
      * Notify all Observer when a device has connected

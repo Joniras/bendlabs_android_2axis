@@ -136,7 +136,7 @@
         android:layout_height="wrap_content"
         android:onClick="onClick"
         android:text="Turn on notifications" />
-    
+
     <Button
         android:id="@+id/turnOff"
         android:layout_width="match_parent"

@@ -23,15 +23,10 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     private TextView angle_x;
     private TextView angle_y;
     private LinearLayout angleResult;
-    private LinearLayout battery;
 
     private final String TAG = MainActivity.class.getSimpleName();
     private AngleSensor angleSensor = AngleSensor.getInstance();
 
-    private void showBatteryLevel(int batteryLevel) {
-        Toast.makeText(this, "Battery level: "+batteryLevel, Toast.LENGTH_LONG).show();
-        ((TextView)findViewById(R.id.batterylevel)).setText(String.format(Locale.GERMAN,"%d%%", batteryLevel));
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +40,6 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         angle_x = findViewById(R.id.angle_x);
         angle_y = findViewById(R.id.angle_y);
         angleResult = findViewById(R.id.angleresult);
-        battery = findViewById(R.id.battery);
 
         // displayBluetoothState(mBTAdapter.getState() == BluetoothAdapter.STATE_ON);
     }
@@ -136,15 +130,9 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     }
 
     @Override
-    public void onBatteryChange(int percent) {
-        showBatteryLevel(percent);
-    }
-
-    @Override
     public void onDeviceConnected() {
         mBluetoothStatus.setText(R.string.bl_connected);
         angleResult.setVisibility(View.VISIBLE);
-        battery.setVisibility(View.VISIBLE);
     }
 
     @Override

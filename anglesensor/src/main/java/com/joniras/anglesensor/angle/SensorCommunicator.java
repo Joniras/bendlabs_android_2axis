@@ -31,8 +31,6 @@ public class SensorCommunicator extends BluetoothGattCallback {
             "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
     public final static String ACTION_ANGLE_DATA_AVAILABLE =
             "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
-    public final static String ACTION_BATTERY_DATA_AVAILABLE =
-            "com.example.bluetooth.le.ACTION_BATTERY_DATA_AVAILABLE";
     public final static String EXTRA_BATTERY =
             "com.example.bluetooth.le.EXTRA_BATTERY";
     public final static String EXTRA_ANGLE_X =
@@ -120,6 +118,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
                     bluetoothGatt.discoverServices());
         }
     }
+
 
     private void readChara(BluetoothGatt gatt, UUID service, UUID characteristic) {
         BluetoothGattCharacteristic chara = gatt.getService(service)
@@ -216,14 +215,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
         super.onCharacteristicRead(gatt, characteristic, status);
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (BLCHARACTERISTIC_B_BATTERY.equals(characteristic.getUuid())) {
-                //turnOnNotifications(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, BLDESCRIPTOR_A_ANGLE);
-                final Intent intent = new Intent(ACTION_BATTERY_DATA_AVAILABLE);
-                final byte[] data = characteristic.getValue();
-                // Log.i(TAG,"Received: "+ Arrays.toString(data));
-                if (data.length > 0) {
-                    intent.putExtra(EXTRA_BATTERY, ((data[0] & 0xFF)));
-                }
-                sendBroadcast(intent);
+                // Battery characteristic is fake
             } else{
                 Log.i(TAG, "UNKNOWN Read Characteristic");
             }
