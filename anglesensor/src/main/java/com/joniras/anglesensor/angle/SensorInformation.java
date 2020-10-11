@@ -1,6 +1,8 @@
 package com.joniras.anglesensor.angle;
 
-public class SensorInformation {
+import java.io.Serializable;
+
+public class SensorInformation implements Serializable {
     private String manufacturer;
     private String model;
     private String hardwareRevision;
@@ -58,5 +60,17 @@ public class SensorInformation {
     }
 
     public SensorInformation() {
+    }
+
+    @Override
+    public String toString() {
+        return "SensorInformation{" +
+                "manufacturer='" + manufacturer + '\'' +
+                ", model='" + model + '\'' +
+                ", hardwareRevision='" + hardwareRevision + '\'' +
+                ", firmwareRevision='" + firmwareRevision + '\'' +
+                ", softwareRevision='" + softwareRevision + '\'' +
+                ", deviceName='" + deviceName + '\'' +
+                '}';
     }
 }

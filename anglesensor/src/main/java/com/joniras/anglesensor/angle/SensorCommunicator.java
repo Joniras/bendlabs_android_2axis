@@ -39,6 +39,10 @@ public class SensorCommunicator extends BluetoothGattCallback {
             "com.example.bluetooth.le.EXTRA_ANGLE_Y";
     public final static String ACTION_GATT_SERVICES_DISCOVERED =
             "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
+    public final static String ACTION_SENSOR_INFORMATION =
+            "com.example.bluetooth.le.ACTION_SENSOR_INFORMATION";
+    static final String EXTRA_SENSOR_INFORMATION =
+            "com.example.bluetooth.le.EXTRA_SENSOR_INFORMATION";
 
     final static UUID BLSERVICE_GENERIC_ACCESS = convertFromInteger(0x1800);
     final static UUID BLCHARACTERISTIC_GA_DEVICE_NAME = convertFromInteger(0x2A00);
@@ -54,7 +58,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_A_ANGLE = convertFromInteger(0x2A70);
     final static UUID BLDESCRIPTOR_A_ANGLE = convertFromInteger(0x2902);
 
-
+    // Battery characteristics do not contain real data, only 100% all the time
     final static UUID BLSERVICE_GENERIC_BATTERY = convertFromInteger(0x180F);
     final static UUID BLCHARACTERISTIC_B_BATTERY = convertFromInteger(0x2A19);
     final static UUID BLDESCRIPTOR_B_BATTERY = convertFromInteger(0x2902);
@@ -71,6 +75,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
     private static SensorCommunicator instance = new SensorCommunicator();
 
     private static SensorInformation info = new SensorInformation();
+    private boolean initalAngle = true;
 
     public static SensorCommunicator getInstance() {
         return instance;
@@ -85,6 +90,12 @@ public class SensorCommunicator extends BluetoothGattCallback {
         this.context = context;
     }
 
+
+    public void connect(BluetoothDevice device, Context context, boolean initialAngle) {
+        this.connect(device,context);
+        this.initalAngle = initialAngle;
+    }
+
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         super.onConnectionStateChange(gatt, status, newState);
@@ -92,6 +103,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
             Log.i(TAG, "Connected to GATT server.");
             Log.i(TAG, "Attempting to start service discovery:" +
                     bluetoothGatt.discoverServices());
+            sendBroadcast(new Intent(ACTION_GATT_CONNECTED));
 
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             Log.i(TAG, "Disconnected from GATT server.");
@@ -108,10 +120,10 @@ public class SensorCommunicator extends BluetoothGattCallback {
         super.onServicesDiscovered(gatt, status);
         if (status == BluetoothGatt.GATT_SUCCESS) {
             Log.w(TAG, "onServicesDiscovered success");
-            sendBroadcast(new Intent(ACTION_GATT_CONNECTED));
             sendBroadcast(new Intent(ACTION_GATT_SERVICES_DISCOVERED));
-            //writeSampleRate(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, 1);
-            //readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
+            if(initalAngle){
+                turnOnNotifications();
+            }
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
             Log.i(TAG, "Attempting to start service discovery:" +
@@ -120,10 +132,10 @@ public class SensorCommunicator extends BluetoothGattCallback {
     }
 
 
-    private void readChara(BluetoothGatt gatt, UUID service, UUID characteristic) {
-        BluetoothGattCharacteristic chara = gatt.getService(service)
+    private void readChara(UUID service, UUID characteristic) {
+        BluetoothGattCharacteristic chara = bluetoothGatt.getService(service)
                 .getCharacteristic(characteristic);
-        boolean successfull = gatt.readCharacteristic(chara);
+        boolean successfull = bluetoothGatt.readCharacteristic(chara);
         Log.i(TAG, "Read characteristic successfull: " + successfull);
     }
 
@@ -138,6 +150,9 @@ public class SensorCommunicator extends BluetoothGattCallback {
         bluetoothGatt.writeDescriptor(desc);
     }
 
+    void readSensorInformation(){
+        readChara(BLSERVICE_GENERIC_ACCESS, BLCHARACTERISTIC_GA_DEVICE_NAME);
+    }
 
     void turnOffNotifications() {
         BluetoothGattCharacteristic chara =
@@ -148,17 +163,6 @@ public class SensorCommunicator extends BluetoothGattCallback {
         BluetoothGattDescriptor desc = chara.getDescriptor(SensorCommunicator.BLDESCRIPTOR_A_ANGLE);
         desc.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
         bluetoothGatt.writeDescriptor(desc);
-    }
-
-    private void turnOffNotifications(BluetoothGatt gatt, UUID service, UUID characteristic, UUID descriptor) {
-        BluetoothGattCharacteristic chara =
-                gatt.getService(service)
-                        .getCharacteristic(characteristic);
-        gatt.setCharacteristicNotification(chara, false);
-
-        BluetoothGattDescriptor desc = chara.getDescriptor(descriptor);
-        desc.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-        gatt.writeDescriptor(desc);
     }
 
     /**
@@ -214,10 +218,27 @@ public class SensorCommunicator extends BluetoothGattCallback {
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         super.onCharacteristicRead(gatt, characteristic, status);
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            if (BLCHARACTERISTIC_B_BATTERY.equals(characteristic.getUuid())) {
-                // Battery characteristic is fake
-            } else{
-                Log.i(TAG, "UNKNOWN Read Characteristic");
+            if (BLCHARACTERISTIC_GA_DEVICE_NAME.equals(characteristic.getUuid())) {
+                        info.setDeviceName(characteristic.getStringValue(0));
+                        readChara(BLSERVICE_GENERIC_DEVICE_INFORMATION,BLCHARACTERISTIC_GDI_MODEL_NUMBER);
+            } else if(BLCHARACTERISTIC_GDI_MODEL_NUMBER.equals(characteristic.getUuid())){
+                info.setModel(characteristic.getStringValue(0));
+                readChara(BLSERVICE_GENERIC_DEVICE_INFORMATION,BLCHARACTERISTIC_GDI_MANUFACTURER);
+            }else if(BLCHARACTERISTIC_GDI_MANUFACTURER.equals(characteristic.getUuid())){
+                info.setManufacturer(characteristic.getStringValue(0));
+                readChara(BLSERVICE_GENERIC_DEVICE_INFORMATION,BLCHARACTERISTIC_GDI_REVISION);
+            }else if(BLCHARACTERISTIC_GDI_REVISION.equals(characteristic.getUuid())){
+                info.setFirmwareRevision(characteristic.getStringValue(0));
+                readChara(BLSERVICE_GENERIC_DEVICE_INFORMATION,BLCHARACTERISTIC_GDI_SOFTWARE);
+            }else if(BLCHARACTERISTIC_GDI_SOFTWARE.equals(characteristic.getUuid())){
+                info.setSoftwareRevision(characteristic.getStringValue(0));
+                readChara(BLSERVICE_GENERIC_DEVICE_INFORMATION,BLCHARACTERISTIC_GDI_VERSION);
+            }else if(BLCHARACTERISTIC_GDI_VERSION.equals(characteristic.getUuid())){
+                info.setHardwareRevision(characteristic.getStringValue(0));
+                Intent a = new Intent();
+                a.setAction(ACTION_SENSOR_INFORMATION);
+                a.putExtra(EXTRA_SENSOR_INFORMATION, info);
+                sendBroadcast(a);
             }
         }
     }

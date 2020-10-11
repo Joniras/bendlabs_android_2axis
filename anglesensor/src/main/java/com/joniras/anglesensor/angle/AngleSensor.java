@@ -24,7 +24,9 @@ import java.util.ArrayList;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_CONNECTED;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_DISCONNECTED;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_SERVICES_DISCOVERED;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_SENSOR_INFORMATION;
 import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_BATTERY;
+import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_SENSOR_INFORMATION;
 
 public class AngleSensor {
     private static final String TAG = "AngleSensor";
@@ -71,6 +73,7 @@ public class AngleSensor {
         filter.addAction(ACTION_GATT_CONNECTED);
         filter.addAction(ACTION_GATT_DISCONNECTED);
         filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
+        filter.addAction(ACTION_SENSOR_INFORMATION);
         context.registerReceiver(blEReceiver, filter);
 
         // Ask for location permission if not already allowed
@@ -85,7 +88,7 @@ public class AngleSensor {
     public void discover() throws Exception {
         // If service is null probably something with permissions is wrong
         if(service != null){
-            service.discover();
+            service.discover(false);
         }else{
             throw new Exception("Service not ready (Permission failure)");
         }
@@ -160,6 +163,15 @@ public class AngleSensor {
         }
     }
 
+    public void readSensorInformation() throws Exception {
+
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("readSensorInformation");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
 
     /**
      * Register with this function if you want Angle Data and General Data (Batter, etc)
@@ -228,6 +240,8 @@ public class AngleSensor {
                 case ACTION_GATT_DISCONNECTED:
                     notifyDeviceDisconnected();
                     break;
+                case ACTION_SENSOR_INFORMATION:
+                    notifySensorInformation((SensorInformation)intent.getSerializableExtra(EXTRA_SENSOR_INFORMATION));
             }
         }
     };
@@ -287,6 +301,15 @@ public class AngleSensor {
     private void notifyBluetoothStateChanged(boolean isOn){
         for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onBluetoothStateChanged(isOn);
+        }
+    }
+    /**
+     * Notify all Observer when Sensor Information is available
+     * @param info Sensor information
+     */
+    private void notifySensorInformation(SensorInformation info){
+        for (ISensorDataObserver observer: angleSensorObservers) {
+            observer.onSensorInformation(info);
         }
     }
 

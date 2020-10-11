@@ -144,5 +144,12 @@
         android:onClick="onClick"
         android:text="Turn off notifications" />
 
+    <Button
+        android:id="@+id/readSensorInformation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Read Sensor Information" />
+
 </LinearLayout>
 

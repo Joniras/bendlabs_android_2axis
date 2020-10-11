@@ -33,6 +33,7 @@ public class BluetoothService extends Service {
     private ServiceHandler serviceHandler;
     private final IBinder binder = new LocalBinder();
     private AngleSensor angleSensor = AngleSensor.getInstance();
+    private boolean initalAngle = true;
 
     /**
      * Receive the Broadcast when a bluetooth device was found
@@ -49,9 +50,9 @@ public class BluetoothService extends Service {
         }
     };
 
-    public void discover() {
+    public void discover(boolean initialAngle) {
         registerReceiver(blReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-        sendToThread("discover");
+        sendToThread("discover", "initialAngle",initialAngle);
     }
 
     // receives Broadcasts
@@ -101,9 +102,10 @@ public class BluetoothService extends Service {
                     String address = msg.getData().getString("address");
                     Log.i("Thread", "Connecting to: " + address);
                     //launch the SensorCommunicator who is responsible for the communication to the Sensor
-                    SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this);
+                    SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initalAngle);
                     break;
                 case "discover":
+
                     if (mBTAdapter.isDiscovering()) {
                         mBTAdapter.cancelDiscovery();
                         Toast.makeText(getApplicationContext(), R.string.bl_discovery_stopped, Toast.LENGTH_SHORT).show();
@@ -142,6 +144,9 @@ public class BluetoothService extends Service {
                 case "turnOff":
                     SensorCommunicator.getInstance().turnOffNotifications();
                     break;
+                case "readSensorInformation":
+                    SensorCommunicator.getInstance().readSensorInformation();
+                    break;
             }
         }
     }
@@ -159,6 +164,15 @@ public class BluetoothService extends Service {
         Message m = new Message();
         Bundle b = new Bundle();
         b.putString(paramName, param);
+        b.putString("ACTION", action);
+        m.setData(b);
+        serviceHandler.sendMessage(m);
+    }
+
+    public void sendToThread(String action, String paramName, boolean param) {
+        Message m = new Message();
+        Bundle b = new Bundle();
+        b.putBoolean(paramName, param);
         b.putString("ACTION", action);
         m.setData(b);
         serviceHandler.sendMessage(m);

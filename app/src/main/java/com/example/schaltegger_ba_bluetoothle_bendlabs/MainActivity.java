@@ -1,8 +1,11 @@
 package com.example.schaltegger_ba_bluetoothle_bendlabs;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -11,6 +14,7 @@ import android.widget.Toast;
 
 import com.joniras.anglesensor.angle.AnglePair;
 import com.joniras.anglesensor.angle.AngleSensor;
+import com.joniras.anglesensor.angle.SensorInformation;
 import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 
 import java.util.Locale;
@@ -103,18 +107,28 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                break;
             case R.id.turnOff:
                 try {
                     angleSensor.turnOff();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                break;
             case R.id.turnOn:
                 try {
                     angleSensor.turnOn();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                break;
+            case R.id.readSensorInformation:
+                try {
+                    angleSensor.readSensorInformation();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
         }
     }
 
@@ -143,6 +157,16 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     @Override
     public void onBluetoothStateChanged(boolean isOn) {
         displayBluetoothState(isOn);
+    }
+
+    @Override
+    public void onSensorInformation(SensorInformation info) {
+        new AlertDialog.Builder(this)
+                .setTitle("Sensor Information")
+                .setMessage(info.toString())
+                .setNegativeButton(android.R.string.ok, null)
+                .setIcon(android.R.drawable.ic_dialog_info)
+                .show();
     }
 
 
