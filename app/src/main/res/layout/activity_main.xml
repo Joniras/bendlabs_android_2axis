@@ -71,29 +71,6 @@
             android:layout_width="0dp" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/battery"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="invisible">
-
-        <TextView
-            android:id="@+id/batterylabel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/battery" />
-
-        <TextView
-            android:id="@+id/batterylevel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="" />
-
-    </LinearLayout>
-
     <Button
         android:id="@+id/connect"
         android:layout_width="match_parent"
@@ -109,6 +86,63 @@
         android:background="@color/colorPrimary"
         android:onClick="onClick"
         android:text="@string/go_to_maps" />
+
+    <EditText
+        android:id="@+id/sampleRate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="Sample Rate"
+        android:inputType="number"
+        android:text="20" />
+
+    <Button
+        android:id="@+id/rateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Set Sample Rate" />
+
+    <Button
+        android:id="@+id/calibrate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Calibrate" />
+
+    <Button
+        android:id="@+id/reset"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Reset Calibration" />
+
+    <Button
+        android:id="@+id/resetSoftware"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Reset Sensor Software" />
+
+    <Button
+        android:id="@+id/disconnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Disconnect" />
+    <Button
+        android:id="@+id/turnOn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Turn on notifications" />
+    
+    <Button
+        android:id="@+id/turnOff"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onClick"
+        android:text="Turn off notifications" />
 
 </LinearLayout>
 

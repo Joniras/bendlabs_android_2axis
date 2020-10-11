@@ -101,7 +101,7 @@ public class BluetoothService extends Service {
                     String address = msg.getData().getString("address");
                     Log.i("Thread", "Connecting to: " + address);
                     //launch the SensorCommunicator who is responsible for the communication to the Sensor
-                    new SensorCommunicator(mBTAdapter.getRemoteDevice(address), BluetoothService.this);
+                    SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this);
                     break;
                 case "discover":
                     if (mBTAdapter.isDiscovering()) {
@@ -119,6 +119,29 @@ public class BluetoothService extends Service {
                             Toast.makeText(getApplicationContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
                         }
                     }
+                    break;
+                case "rate":
+                    int rate = msg.getData().getInt("rate");
+                    SensorCommunicator.getInstance().writeSampleRate(rate);
+                    break;
+                case "calibrate":
+                    SensorCommunicator.getInstance().calibrate();
+                    break;
+                case "reset":
+                    SensorCommunicator.getInstance().resetSensor();
+                    break;
+                case "softwarereset":
+                    SensorCommunicator.getInstance().softwareResetSensor();
+                    break;
+                case "disconnect":
+                    SensorCommunicator.getInstance().disconnect();
+                    break;
+                case "turnOn":
+                    SensorCommunicator.getInstance().turnOnNotifications();
+                    break;
+                case "turnOff":
+                    SensorCommunicator.getInstance().turnOffNotifications();
+                    break;
             }
         }
     }
@@ -136,6 +159,15 @@ public class BluetoothService extends Service {
         Message m = new Message();
         Bundle b = new Bundle();
         b.putString(paramName, param);
+        b.putString("ACTION", action);
+        m.setData(b);
+        serviceHandler.sendMessage(m);
+    }
+
+    public void sendToThread(String action, String paramName, int param) {
+        Message m = new Message();
+        Bundle b = new Bundle();
+        b.putInt(paramName, param);
         b.putString("ACTION", action);
         m.setData(b);
         serviceHandler.sendMessage(m);

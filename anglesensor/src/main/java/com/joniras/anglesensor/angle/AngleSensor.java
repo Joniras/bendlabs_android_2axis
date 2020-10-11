@@ -93,6 +93,75 @@ public class AngleSensor {
         }
     }
 
+    /**
+     *
+     * @param rate A Value between 1 and 16384 (1 is fast and 16484 is very slow)
+     * @throws Exception
+     */
+    public void setRate(int rate) throws Exception {
+        if(service != null){
+            if(rate < 1 || rate > 16384){
+                throw new IllegalArgumentException("Rate must be between 1 and 16384");
+            }else{
+                service.sendToThread("rate", "rate", rate);
+            }
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+
+    public void calibrate() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("calibrate");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+
+    public void resetSensor() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("reset");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+    public void resetSensorSoftware() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("softwarereset");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+    public void disconnect() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("disconnect");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+
+    public void turnOn() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("turnOn");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+
+    public void turnOff() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(service != null){
+            service.sendToThread("turnOff");
+        }else{
+            throw new Exception("Service not ready");
+        }
+    }
+
 
     /**
      * Register with this function if you want Angle Data and General Data (Batter, etc)

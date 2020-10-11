@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -67,8 +68,60 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                 Intent intent = new Intent(this, MapsActivity.class);
                 startActivity(intent);
                 break;
+            case R.id.rateButton:
+                int rate = Integer.parseInt(((EditText)findViewById(R.id.sampleRate)).getText().toString());
+                if(rate >= 0){
+                    try {
+                        angleSensor.setRate(rate);
+                        Toast.makeText(this, "Sample rate set", Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Sample rate could not be set", Toast.LENGTH_LONG).show();
+                        e.printStackTrace();
+                    }
+                }else{
+                    Toast.makeText(this, "Rate is not valid", Toast.LENGTH_LONG).show();
+                }
+                break;
+            case R.id.reset:
+                try {
+                    angleSensor.resetSensor();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case R.id.calibrate:
+                try {
+                    angleSensor.calibrate();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case R.id.resetSoftware:
+                try {
+                    angleSensor.resetSensorSoftware();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case R.id.disconnect:
+                try {
+                    angleSensor.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            case R.id.turnOff:
+                try {
+                    angleSensor.turnOff();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            case R.id.turnOn:
+                try {
+                    angleSensor.turnOn();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
         }
-
     }
 
 

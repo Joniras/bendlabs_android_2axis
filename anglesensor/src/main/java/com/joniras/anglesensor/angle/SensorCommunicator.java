@@ -22,8 +22,8 @@ import java.util.UUID;
  */
 public class SensorCommunicator extends BluetoothGattCallback {
     private final String TAG = SensorCommunicator.class.getSimpleName();
-    private final BluetoothGatt bluetoothGatt;
-    private final Context context;
+    private BluetoothGatt bluetoothGatt;
+    private Context context;
 
     public final static String ACTION_GATT_CONNECTED =
             "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
@@ -69,7 +69,20 @@ public class SensorCommunicator extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_GDI_MANUFACTURER = convertFromInteger(0x2A29);
     final static UUID BLCHARACTERISTIC_GDI_MODEL_NUMBER = convertFromInteger(0x2A24);
 
-    SensorCommunicator(BluetoothDevice device, Context context) {
+
+    private static SensorCommunicator instance = new SensorCommunicator();
+
+    private static SensorInformation info = new SensorInformation();
+
+    public static SensorCommunicator getInstance() {
+        return instance;
+    }
+
+    private SensorCommunicator() {
+
+    }
+
+    public void connect(BluetoothDevice device, Context context) {
         bluetoothGatt = device.connectGatt(context, false, this);
         this.context = context;
     }
@@ -99,8 +112,8 @@ public class SensorCommunicator extends BluetoothGattCallback {
             Log.w(TAG, "onServicesDiscovered success");
             sendBroadcast(new Intent(ACTION_GATT_CONNECTED));
             sendBroadcast(new Intent(ACTION_GATT_SERVICES_DISCOVERED));
-            // writeSampleRate(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, 1);
-            readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
+            //writeSampleRate(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, 1);
+            //readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
             Log.i(TAG, "Attempting to start service discovery:" +
@@ -115,15 +128,27 @@ public class SensorCommunicator extends BluetoothGattCallback {
         Log.i(TAG, "Read characteristic successfull: " + successfull);
     }
 
-    private void turnOnNotifications(BluetoothGatt gatt, UUID service, UUID characteristic, UUID descriptor) {
+    void turnOnNotifications() {
         BluetoothGattCharacteristic chara =
-                gatt.getService(service)
-                        .getCharacteristic(characteristic);
-        gatt.setCharacteristicNotification(chara, true);
+                bluetoothGatt.getService(SensorCommunicator.BLSERVICE_GENERIC_ANGLE)
+                        .getCharacteristic(SensorCommunicator.BLCHARACTERISTIC_A_ANGLE);
+        bluetoothGatt.setCharacteristicNotification(chara, true);
 
-        BluetoothGattDescriptor desc = chara.getDescriptor(descriptor);
+        BluetoothGattDescriptor desc = chara.getDescriptor(SensorCommunicator.BLDESCRIPTOR_A_ANGLE);
         desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-        gatt.writeDescriptor(desc);
+        bluetoothGatt.writeDescriptor(desc);
+    }
+
+
+    void turnOffNotifications() {
+        BluetoothGattCharacteristic chara =
+                bluetoothGatt.getService(SensorCommunicator.BLSERVICE_GENERIC_ANGLE)
+                        .getCharacteristic(SensorCommunicator.BLCHARACTERISTIC_A_ANGLE);
+        bluetoothGatt.setCharacteristicNotification(chara, false);
+
+        BluetoothGattDescriptor desc = chara.getDescriptor(SensorCommunicator.BLDESCRIPTOR_A_ANGLE);
+        desc.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        bluetoothGatt.writeDescriptor(desc);
     }
 
     private void turnOffNotifications(BluetoothGatt gatt, UUID service, UUID characteristic, UUID descriptor) {
@@ -137,14 +162,53 @@ public class SensorCommunicator extends BluetoothGattCallback {
         gatt.writeDescriptor(desc);
     }
 
-    private void writeSampleRate(BluetoothGatt gatt, UUID service, UUID characteristic, int rate) {
-        BluetoothGattCharacteristic chara = gatt.getService(service)
-                .getCharacteristic(characteristic);
+    /**
+     * @param rate A Value between 0 and 16384 (0 is fast and 16484 is very slow)
+     */
+    public void writeSampleRate(int rate) {
+        final byte[] data = ByteBuffer.allocate(2).putShort((short) rate).array();
+        boolean successfull = writeAngleData(data);
+        Log.i(TAG, "rate write : " + successfull);
+    }
 
-        final byte[] data = ByteBuffer.allocate(2).putInt(rate).array();
-        chara.setValue(data);
-        boolean successfull = gatt.writeCharacteristic(chara);
-        Log.i(TAG, "Samplerate write : " + successfull);
+    /**
+     *
+     */
+    public void calibrate() {
+        final byte[] data = ByteBuffer.allocate(1).put(Integer.valueOf(0).byteValue()).array();
+        boolean successfull = writeAngleData(data);
+        Log.i(TAG, "calibration write : " + successfull);
+    }
+
+    /**
+     *
+     */
+    public void resetSensor() {
+        final byte[] data = ByteBuffer.allocate(1).put(Integer.valueOf(3).byteValue()).array();
+        boolean successfull = writeAngleData(data);
+        Log.i(TAG, "reset write : " + successfull);
+    }
+
+
+    /**
+     *
+     */
+    public void softwareResetSensor() {
+        final byte[] data = ByteBuffer.allocate(1).put(Integer.valueOf(7).byteValue()).array();
+        boolean successfull = writeAngleData(data);
+        Log.i(TAG, "software reset write : " + successfull);
+    }
+
+    public boolean writeAngleData(byte[] data){
+        if (bluetoothGatt != null) {
+            BluetoothGattCharacteristic chara = bluetoothGatt.getService(BLSERVICE_GENERIC_ANGLE)
+                    .getCharacteristic(BLCHARACTERISTIC_A_ANGLE);
+            chara.setValue(data);
+            return bluetoothGatt.writeCharacteristic(chara);
+        } else {
+            Log.e(TAG, "Device not yet connected");
+            return false;
+        }
     }
 
     @Override
@@ -152,8 +216,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
         super.onCharacteristicRead(gatt, characteristic, status);
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (BLCHARACTERISTIC_B_BATTERY.equals(characteristic.getUuid())) {
-
-                turnOnNotifications(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, BLDESCRIPTOR_A_ANGLE);
+                //turnOnNotifications(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, BLDESCRIPTOR_A_ANGLE);
                 final Intent intent = new Intent(ACTION_BATTERY_DATA_AVAILABLE);
                 final byte[] data = characteristic.getValue();
                 // Log.i(TAG,"Received: "+ Arrays.toString(data));
@@ -161,7 +224,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
                     intent.putExtra(EXTRA_BATTERY, ((data[0] & 0xFF)));
                 }
                 sendBroadcast(intent);
-            } else {
+            } else{
                 Log.i(TAG, "UNKNOWN Read Characteristic");
             }
         }
@@ -169,7 +232,8 @@ public class SensorCommunicator extends BluetoothGattCallback {
 
     /**
      * Function gets called when a characteristic that has turned on notification changes
-     * @param gatt the gatt service
+     *
+     * @param gatt           the gatt service
      * @param characteristic the characteristic that changed
      */
     @Override
@@ -177,15 +241,28 @@ public class SensorCommunicator extends BluetoothGattCallback {
                                         BluetoothGattCharacteristic characteristic) {
         if (characteristic.getUuid().equals(BLCHARACTERISTIC_A_ANGLE)) {
             byte[] data = characteristic.getValue();
-            float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-            float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-            Intent intent = new Intent(ACTION_ANGLE_DATA_AVAILABLE);
-            intent.putExtra(EXTRA_ANGLE_X, a0);
-            intent.putExtra(EXTRA_ANGLE_Y, a1);
-            sendBroadcast(intent);
+            if (data.length > 7) {
+                float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+                float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+                Intent intent = new Intent(ACTION_ANGLE_DATA_AVAILABLE);
+                intent.putExtra(EXTRA_ANGLE_X, a0);
+                intent.putExtra(EXTRA_ANGLE_Y, a1);
+                sendBroadcast(intent);
+            } else {
+                Log.i(TAG, "Incoming data: " + Arrays.toString(data) + " with length: " + data.length);
+            }
         } else {
             UUID uuid = characteristic.getUuid();
             System.out.println(uuid);
+        }
+    }
+
+    @Override
+    public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+        super.onCharacteristicWrite(gatt, characteristic, status);
+        if (status != BluetoothGatt.GATT_SUCCESS) {
+            Log.d("onCharacteristicWrite", "Failed write, retrying");
+            gatt.writeCharacteristic(characteristic);
         }
     }
 
@@ -196,4 +273,9 @@ public class SensorCommunicator extends BluetoothGattCallback {
         return new UUID(MSB | ((long) i << 32), LSB);
     }
 
+    public void disconnect() {
+        if (bluetoothGatt != null) {
+            bluetoothGatt.disconnect();
+        }
+    }
 }
