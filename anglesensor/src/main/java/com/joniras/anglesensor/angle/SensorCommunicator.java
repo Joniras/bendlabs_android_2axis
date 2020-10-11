@@ -99,6 +99,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
             Log.w(TAG, "onServicesDiscovered success");
             sendBroadcast(new Intent(ACTION_GATT_CONNECTED));
             sendBroadcast(new Intent(ACTION_GATT_SERVICES_DISCOVERED));
+            // writeSampleRate(gatt, BLSERVICE_GENERIC_ANGLE, BLCHARACTERISTIC_A_ANGLE, 1);
             readChara(gatt, BLSERVICE_GENERIC_BATTERY, BLCHARACTERISTIC_B_BATTERY);
         } else {
             Log.w(TAG, "onServicesDiscovered received: " + status);
@@ -111,7 +112,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
         BluetoothGattCharacteristic chara = gatt.getService(service)
                 .getCharacteristic(characteristic);
         boolean successfull = gatt.readCharacteristic(chara);
-        Log.i(TAG, "Readoperation susff: " + successfull);
+        Log.i(TAG, "Read characteristic successfull: " + successfull);
     }
 
     private void turnOnNotifications(BluetoothGatt gatt, UUID service, UUID characteristic, UUID descriptor) {
@@ -123,6 +124,27 @@ public class SensorCommunicator extends BluetoothGattCallback {
         BluetoothGattDescriptor desc = chara.getDescriptor(descriptor);
         desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         gatt.writeDescriptor(desc);
+    }
+
+    private void turnOffNotifications(BluetoothGatt gatt, UUID service, UUID characteristic, UUID descriptor) {
+        BluetoothGattCharacteristic chara =
+                gatt.getService(service)
+                        .getCharacteristic(characteristic);
+        gatt.setCharacteristicNotification(chara, false);
+
+        BluetoothGattDescriptor desc = chara.getDescriptor(descriptor);
+        desc.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        gatt.writeDescriptor(desc);
+    }
+
+    private void writeSampleRate(BluetoothGatt gatt, UUID service, UUID characteristic, int rate) {
+        BluetoothGattCharacteristic chara = gatt.getService(service)
+                .getCharacteristic(characteristic);
+
+        final byte[] data = ByteBuffer.allocate(2).putInt(rate).array();
+        chara.setValue(data);
+        boolean successfull = gatt.writeCharacteristic(chara);
+        Log.i(TAG, "Samplerate write : " + successfull);
     }
 
     @Override
