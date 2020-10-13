@@ -33,7 +33,6 @@ public class BluetoothService extends Service {
     private ServiceHandler serviceHandler;
     private final IBinder binder = new LocalBinder();
     private AngleSensor angleSensor = AngleSensor.getInstance();
-    private boolean initalAngle = true;
 
     /**
      * Receive the Broadcast when a bluetooth device was found
@@ -80,6 +79,7 @@ public class BluetoothService extends Service {
     private final class ServiceHandler extends Handler {
         private String TAG = "Thread";
         private BluetoothAdapter mBTAdapter;
+        private boolean initialAngle = false;
 
         ServiceHandler(Looper looper) {
             super(looper);
@@ -102,10 +102,10 @@ public class BluetoothService extends Service {
                     String address = msg.getData().getString("address");
                     Log.i("Thread", "Connecting to: " + address);
                     //launch the SensorCommunicator who is responsible for the communication to the Sensor
-                    SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initalAngle);
+                    SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initialAngle);
                     break;
                 case "discover":
-
+                    initialAngle = msg.getData().getBoolean("initialAngle");
                     if (mBTAdapter.isDiscovering()) {
                         mBTAdapter.cancelDiscovery();
                         Toast.makeText(getApplicationContext(), R.string.bl_discovery_stopped, Toast.LENGTH_SHORT).show();

@@ -63,14 +63,12 @@ public class SensorCommunicator extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_B_BATTERY = convertFromInteger(0x2A19);
     final static UUID BLDESCRIPTOR_B_BATTERY = convertFromInteger(0x2902);
 
-
     final static UUID BLSERVICE_GENERIC_DEVICE_INFORMATION = convertFromInteger(0x180A);
     final static UUID BLCHARACTERISTIC_GDI_REVISION = convertFromInteger(0x2A27);
     final static UUID BLCHARACTERISTIC_GDI_VERSION = convertFromInteger(0x2A26);
     final static UUID BLCHARACTERISTIC_GDI_SOFTWARE = convertFromInteger(0x2A28);
     final static UUID BLCHARACTERISTIC_GDI_MANUFACTURER = convertFromInteger(0x2A29);
     final static UUID BLCHARACTERISTIC_GDI_MODEL_NUMBER = convertFromInteger(0x2A24);
-
 
     private static SensorCommunicator instance = new SensorCommunicator();
 

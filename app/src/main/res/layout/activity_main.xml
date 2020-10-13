@@ -71,21 +71,46 @@
             android:layout_width="0dp" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/connect"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
-        android:onClick="onClick"
-        android:text="@string/connect" />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/connect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="onClick"
+            android:layout_weight="1"
+            android:text="@string/connect" />
+
+        <Switch
+            android:id="@+id/initialAngle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:onClick="onClick"
+            android:text="Subscribe to Angle Data instantly" />
+
+    </LinearLayout>
+
 
     <Button
         android:id="@+id/btn_maps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/colorPrimary"
         android:onClick="onClick"
         android:text="@string/go_to_maps" />
+
+    <SeekBar
+        android:id="@+id/initialAngleSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="16384"
+        android:min="1"
+        android:progress="20" />
+
 
     <EditText
         android:id="@+id/sampleRate"
@@ -94,6 +119,8 @@
         android:ems="10"
         android:hint="Sample Rate"
         android:inputType="number"
+        android:maxEms="16483"
+        android:minEms="1"
         android:text="20" />
 
     <Button

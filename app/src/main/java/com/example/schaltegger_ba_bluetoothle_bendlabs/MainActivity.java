@@ -6,9 +6,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,7 +23,7 @@ import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 import java.util.Locale;
 
 
-public class MainActivity extends Activity implements View.OnClickListener, ISensorDataObserver {
+public class MainActivity extends Activity implements View.OnClickListener, ISensorDataObserver, SeekBar.OnSeekBarChangeListener, TextView.OnEditorActionListener {
 
     // GUI Components
     private TextView mBluetoothStatus;
@@ -30,6 +33,8 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
 
     private final String TAG = MainActivity.class.getSimpleName();
     private AngleSensor angleSensor = AngleSensor.getInstance();
+    private boolean initialAngle = true;
+    private int sampleRate = 20;
 
 
     @Override
@@ -39,7 +44,8 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         angleSensor.registerObserver(this);
 
         setContentView(R.layout.activity_main);
-
+        ((SeekBar)findViewById(R.id.initialAngleSlider)).setOnSeekBarChangeListener(this);
+        ((EditText)findViewById(R.id.sampleRate)).setOnEditorActionListener(this);
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
         angle_y = findViewById(R.id.angle_y);
@@ -57,7 +63,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         switch(v.getId()){
             case R.id.connect:
                 try {
-                    angleSensor.discover();
+                    angleSensor.discover(initialAngle);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -129,6 +135,9 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                     e.printStackTrace();
                 }
                 break;
+            case R.id.initialAngle:
+                initialAngle = ((Switch)findViewById(R.id.initialAngle)).isChecked();
+                break;
         }
     }
 
@@ -174,5 +183,30 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     protected void onDestroy() {
         super.onDestroy();
         angleSensor.removeObserver(this);
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if(fromUser){
+            this.sampleRate = progress;
+            ((EditText)findViewById(R.id.sampleRate)).setText(Integer.toString(progress));
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        sampleRate = Integer.parseInt(((EditText)v).getText().toString());
+        ((SeekBar)findViewById(R.id.initialAngleSlider)).setProgress(sampleRate);
+        return false;
     }
 }

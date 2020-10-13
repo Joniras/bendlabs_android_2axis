@@ -37,6 +37,7 @@ public class AngleSensor {
 
     private static ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
     private static ArrayList<IAngleDataObserver> angleObservers = new ArrayList<>();
+    private boolean connected = false;
 
     public static AngleSensor getInstance() {
         return instance;
@@ -85,13 +86,19 @@ public class AngleSensor {
      * Starts to discover Bluetooth Devices and connects to the IDOFSensor if it is in reach
      * @throws Exception if service not ready (probably a problem with permission for bluetooth)
      */
-    public void discover() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
-            service.discover(false);
-        }else{
-            throw new Exception("Service not ready (Permission failure)");
+    public void discover(boolean initialAngle) throws Exception {
+
+        if(validState(false)){
+            service.discover(initialAngle);
         }
+    }
+
+    /**
+     * Discover the device and then turn on Notifications
+     * @throws Exception if service not ready (probably a problem with permission for bluetooth)
+     */
+    public void discover() throws Exception{
+        discover(true);
     }
 
     /**
@@ -100,76 +107,74 @@ public class AngleSensor {
      * @throws Exception
      */
     public void setRate(int rate) throws Exception {
-        if(service != null){
+        if(validState(true)){
             if(rate < 1 || rate > 16384){
                 throw new IllegalArgumentException("Rate must be between 1 and 16384");
             }else{
                 service.sendToThread("rate", "rate", rate);
+            }
+        }
+    }
+
+    public void calibrate() throws Exception {
+
+        if(validState(true)){
+            service.sendToThread("calibrate");
+        }
+    }
+
+    public void resetSensor() throws Exception {
+        if(validState(true)){
+            service.sendToThread("reset");
+        }
+    }
+    public void resetSensorSoftware() throws Exception {
+        if(validState(true)){
+            service.sendToThread("softwarereset");
+        }
+    }
+    public void disconnect() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(validState(true)){
+            service.sendToThread("disconnect");
+        }
+    }
+
+    public void turnOn() throws Exception {
+        // If service is null probably something with permissions is wrong
+        if(validState(true)){
+            service.sendToThread("turnOn");
+        }
+    }
+
+    private boolean validState(boolean needsConnected) throws Exception{
+        if(service != null && connected){
+            return true;
+        }else if(!connected){
+            if(needsConnected){
+                throw new IllegalStateException("Device not connected, try discover first");
+            }else{
+                throw new IllegalStateException("Device already connected, try disconnect first");
             }
         }else{
             throw new Exception("Service not ready");
         }
     }
 
-    public void calibrate() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
-            service.sendToThread("calibrate");
-        }else{
-            throw new Exception("Service not ready");
-        }
-    }
-
-    public void resetSensor() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
-            service.sendToThread("reset");
-        }else{
-            throw new Exception("Service not ready");
-        }
-    }
-    public void resetSensorSoftware() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
-            service.sendToThread("softwarereset");
-        }else{
-            throw new Exception("Service not ready");
-        }
-    }
-    public void disconnect() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
-            service.sendToThread("disconnect");
-        }else{
-            throw new Exception("Service not ready");
-        }
-    }
-
-    public void turnOn() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
-            service.sendToThread("turnOn");
-        }else{
-            throw new Exception("Service not ready");
-        }
-    }
-
     public void turnOff() throws Exception {
-        // If service is null probably something with permissions is wrong
-        if(service != null){
+        if(validState(true)){
             service.sendToThread("turnOff");
-        }else{
-            throw new Exception("Service not ready");
         }
     }
 
+    /**
+     * Reads the Sensor data and sends a Broadcast with Action ACTION_SENSOR_INFORMATION when done
+     * @throws Exception if device not yet connected or service not started
+     */
     public void readSensorInformation() throws Exception {
 
-        // If service is null probably something with permissions is wrong
-        if(service != null){
+        if(validState(true)){
             service.sendToThread("readSensorInformation");
-        }else{
-            throw new Exception("Service not ready");
         }
     }
 
@@ -235,9 +240,11 @@ public class AngleSensor {
                     }
                     break;
                 case ACTION_GATT_CONNECTED:
+                    connected = true;
                     notifyDeviceConnected();
                     break;
                 case ACTION_GATT_DISCONNECTED:
+                    connected = false;
                     notifyDeviceDisconnected();
                     break;
                 case ACTION_SENSOR_INFORMATION:
