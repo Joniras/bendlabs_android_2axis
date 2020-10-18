@@ -18,4 +18,15 @@
     <string name="y">Y:</string>
     <string name="connect">Connect</string>
     <string name="go_to_maps">Go to Maps</string>
+    <string name="subscribe_to_angle_data_instantly">Subscribe to Angle Data instantly</string>
+    <string name="sample_rate">Sample Rate</string>
+    <string name="set_sample_rate">Set Sample Rate</string>
+    <string name="calibrate">Calibrate</string>
+    <string name="reset_calibration">Reset Calibration</string>
+    <string name="reset_sensor_software">Reset Sensor Software</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="turn_on_notifications">Turn on notifications</string>
+    <string name="turn_off_notifications">Turn off notifications</string>
+    <string name="read_sensor_information">Read Sensor Information</string>
+    <string name="default_sample_rate">20</string>
 </resources>

@@ -2,10 +2,8 @@ package com.example.schaltegger_ba_bluetoothle_bendlabs;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -36,7 +34,6 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     private boolean initialAngle = true;
     private int sampleRate = 20;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,8 +47,6 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         angle_x = findViewById(R.id.angle_x);
         angle_y = findViewById(R.id.angle_y);
         angleResult = findViewById(R.id.angleresult);
-
-        // displayBluetoothState(mBTAdapter.getState() == BluetoothAdapter.STATE_ON);
     }
 
     private void displayBluetoothState(boolean isOn) {
@@ -64,6 +59,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
             case R.id.connect:
                 try {
                     angleSensor.discover(initialAngle);
+                    mBluetoothStatus.setText("Searching for Sensor");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -176,6 +172,11 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                 .setNegativeButton(android.R.string.ok, null)
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .show();
+    }
+
+    @Override
+    public void onDeviceNotFound() {
+        mBluetoothStatus.setText("Device not found");
     }
 
 

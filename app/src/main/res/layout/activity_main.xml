@@ -91,7 +91,7 @@
             android:layout_weight="1"
             android:checked="true"
             android:onClick="onClick"
-            android:text="Subscribe to Angle Data instantly" />
+            android:text="@string/subscribe_to_angle_data_instantly" />
 
     </LinearLayout>
 
@@ -107,7 +107,7 @@
         android:id="@+id/initialAngleSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:max="16384"
+        android:max="500"
         android:min="1"
         android:progress="20" />
 
@@ -117,66 +117,67 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:hint="Sample Rate"
+        android:hint="@string/sample_rate"
         android:inputType="number"
         android:maxEms="16483"
         android:minEms="1"
-        android:text="20" />
+        android:text="@string/default_sample_rate"
+        android:autofillHints="@string/sample_rate" />
 
     <Button
         android:id="@+id/rateButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Set Sample Rate" />
+        android:text="@string/set_sample_rate" />
 
     <Button
         android:id="@+id/calibrate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Calibrate" />
+        android:text="@string/calibrate" />
 
     <Button
         android:id="@+id/reset"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Reset Calibration" />
+        android:text="@string/reset_calibration" />
 
     <Button
         android:id="@+id/resetSoftware"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Reset Sensor Software" />
+        android:text="@string/reset_sensor_software" />
 
     <Button
         android:id="@+id/disconnect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Disconnect" />
+        android:text="@string/disconnect" />
     <Button
         android:id="@+id/turnOn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Turn on notifications" />
+        android:text="@string/turn_on_notifications" />
 
     <Button
         android:id="@+id/turnOff"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Turn off notifications" />
+        android:text="@string/turn_off_notifications" />
 
     <Button
         android:id="@+id/readSensorInformation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onClick"
-        android:text="Read Sensor Information" />
+        android:text="@string/read_sensor_information" />
 
 </LinearLayout>
 

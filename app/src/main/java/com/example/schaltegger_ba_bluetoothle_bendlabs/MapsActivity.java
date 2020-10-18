@@ -115,8 +115,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double angle = Math.abs(this.angles.get(0).getY());
         if (angle > AngleChangeForMove) {
             anglesToSkip = skipAnglesAfterMove;
-            Log.i("Maps", "Change is: " + angle + " and thumb is down: " + currentFinger);
-
             if (currentFinger == DISPLAYFINGER.OFF) {
                 currentZoom += zoomFactor;
                 mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));

@@ -22,58 +22,59 @@ import com.joniras.anglesensor.R;
 import java.util.Objects;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
-import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_X;
-import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
 
 /**
- * Service that Communicates with the Bluetooth Thread
+ * Service, der mit der SensorCommunicator Objekt kommuniziert
  */
 public class BluetoothService extends Service {
     private ServiceHandler serviceHandler;
     private final IBinder binder = new LocalBinder();
     private AngleSensor angleSensor = AngleSensor.getInstance();
 
+    private boolean found = false;
+
+    public static final String ACTION_DISCOVERY_TIMEOUT = "aau.sensor_evaluation.ACTION_DISCOVERY_TIMEOUT";
+
     /**
-     * Receive the Broadcast when a bluetooth device was found
-     * Connects to the Sensor if it was found (by ID)
+     * Empfängt den Broadcast bei Änderung des Bleutooth-Verbindungs oder Suchen-Zustands
+     * Initialisiert Verbindung zum Sensor, wenn dieser gefunden wurde
      */
     final BroadcastReceiver blReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            assert device != null;
-            if (device.getAddress().equals(angleSensor.getIDOFSensor())) {
-                connect(device.getAddress());
+            switch (intent.getAction()){
+                // Ein Bluetooth-Gerät wurde gefunden
+                case BluetoothDevice.ACTION_FOUND:
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if ( device != null && device.getAddress().equals(angleSensor.getIDOFSensor())) {
+                        found = true;
+                        connect(device.getAddress());
+                    }
+                    break;
+                // Das Suchen nach neuen Geräten hat aufgehört
+                case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
+                    if(!found){
+                        sendBroadcast(new Intent(ACTION_DISCOVERY_TIMEOUT));
+                    }
+                    break;
             }
         }
     };
 
+    /**
+     * Startet den Suchvorgang nach neuen Geräten
+     * @param initialAngle gibt an, ob Winkel-Daten direkt nach entstandener Verbindung abonniert werden sollen
+     */
     public void discover(boolean initialAngle) {
-        registerReceiver(blReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+        found = false;
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(blReceiver, filter);
         sendToThread("discover", "initialAngle",initialAngle);
     }
 
-    // receives Broadcasts
-    final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            assert action != null;
-            if (ACTION_ANGLE_DATA_AVAILABLE.equals(action)) {
-                processAngleData(intent.getFloatExtra(EXTRA_ANGLE_X, 0), intent.getFloatExtra(EXTRA_ANGLE_Y, 0));
-            }
-        }
-    };
-
-
-    private void processAngleData(float angleX, float angleY) {
-        angleSensor.notifyAngleDataChanged(new AnglePair(angleX,angleY));
-    }
-
-    public BluetoothService() {
-
-    }
+    public BluetoothService() {}
 
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
@@ -85,14 +86,14 @@ public class BluetoothService extends Service {
             super(looper);
             mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
             if (!mBTAdapter.cancelDiscovery()) {
-                Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState() == BluetoothAdapter.STATE_ON));
+                Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState()));
             } else {
-                Log.i(TAG, "Discovery stopped");
+                Log.v(TAG, "Discovery stopped");
             }
         }
 
         /**
-         * Function that receives all the messages from the service
+         * Funktion leitet Nachrichten vom
          * @param msg that comes from the Service to the Thread
          */
         @Override
@@ -100,7 +101,7 @@ public class BluetoothService extends Service {
             switch (Objects.requireNonNull(msg.getData().getString("ACTION"))) {
                 case "connect":
                     String address = msg.getData().getString("address");
-                    Log.i("Thread", "Connecting to: " + address);
+                    Log.d("Thread", "Connecting to: " + address);
                     //launch the SensorCommunicator who is responsible for the communication to the Sensor
                     SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initialAngle);
                     break;
@@ -115,7 +116,7 @@ public class BluetoothService extends Service {
                             if (!mBTAdapter.startDiscovery()) {
                                 Log.e(TAG, "Discovery could not be started");
                             } else {
-                                Log.i(TAG, "Discovery started");
+                                Log.d(TAG, "Discovery started");
                             }
                         } else {
                             Toast.makeText(getApplicationContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
@@ -153,11 +154,6 @@ public class BluetoothService extends Service {
 
     public void connect(String address) {
         sendToThread("connect", "address", address);
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
-        registerReceiver(blEReceiver, filter);
     }
 
     public void sendToThread(String action, String paramName, String param) {
@@ -194,7 +190,6 @@ public class BluetoothService extends Service {
         m.setData(b);
         serviceHandler.sendMessage(m);
     }
-
 
     /**
      * Function gets called when the Service is started
