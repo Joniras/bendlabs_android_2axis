@@ -289,7 +289,6 @@ public class SensorCommunicator extends BluetoothGattCallback {
                                         BluetoothGattCharacteristic characteristic) {
         if (characteristic.getUuid().equals(BLCHARACTERISTIC_A_ANGLE)) {
             byte[] data = characteristic.getValue();
-            Log.v(TAG, "Incoming data: "+Arrays.toString(data)+" with length: "+data.length);
             if (data.length > 7) {
                 float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
                 float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();

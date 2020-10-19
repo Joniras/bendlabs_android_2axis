@@ -29,4 +29,6 @@
     <string name="turn_off_notifications">Turn off notifications</string>
     <string name="read_sensor_information">Read Sensor Information</string>
     <string name="default_sample_rate">20</string>
+    <string name="searching_for_sensor">Searching for Sensor</string>
+    <string name="device_not_found">Device not found</string>
 </resources>

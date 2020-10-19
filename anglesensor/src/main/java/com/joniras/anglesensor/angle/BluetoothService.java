@@ -17,11 +17,17 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.joniras.anglesensor.R;
+import com.joniras.anglesensor.angle.interfaces.AngleReceiver;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Objects;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
+import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
+import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_X;
+import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
 
 /**
  * Service, der mit der SensorCommunicator Objekt kommuniziert
@@ -42,27 +48,31 @@ public class BluetoothService extends Service {
     final BroadcastReceiver blReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            switch (intent.getAction()){
+            assert intent.getAction() != null;
+            switch (intent.getAction()) {
                 // Ein Bluetooth-Gerät wurde gefunden
                 case BluetoothDevice.ACTION_FOUND:
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if ( device != null && device.getAddress().equals(angleSensor.getIDOFSensor())) {
+                    if (device != null && device.getAddress().equals(angleSensor.getIDOFSensor())) {
                         found = true;
                         connect(device.getAddress());
                     }
                     break;
                 // Das Suchen nach neuen Geräten hat aufgehört
                 case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
-                    if(!found){
+                    if (!found) {
                         sendBroadcast(new Intent(ACTION_DISCOVERY_TIMEOUT));
                     }
                     break;
+                case ACTION_ANGLE_DATA_AVAILABLE:
+                    notifyReceiver(new AnglePair(intent.getFloatExtra(EXTRA_ANGLE_X, 0), intent.getFloatExtra(EXTRA_ANGLE_Y, 0)));
             }
         }
     };
 
     /**
      * Startet den Suchvorgang nach neuen Geräten
+     *
      * @param initialAngle gibt an, ob Winkel-Daten direkt nach entstandener Verbindung abonniert werden sollen
      */
     public void discover(boolean initialAngle) {
@@ -70,11 +80,48 @@ public class BluetoothService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
         registerReceiver(blReceiver, filter);
-        sendToThread("discover", "initialAngle",initialAngle);
+        sendToThread("discover", "initialAngle", initialAngle);
     }
 
-    public BluetoothService() {}
+
+    private void notifyReceiver(AnglePair anglePair) {
+        long current_time = Calendar.getInstance().getTimeInMillis();
+        for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
+            if (angleReceiverObject != null) {
+                synchronized (this) {
+                    if (current_time - angleReceiverObject.getLast_update() > angleReceiverObject.getUpdate_every()) {
+                        angleReceiverObject.setLast_update(current_time);
+                        angleReceiverObject.getAngleReceiver().processAngleDataMillis(anglePair);
+                    }
+                }
+            }
+        }
+    }
+
+    public BluetoothService() {
+    }
+
+
+    private List<AngleReceiverObject> angleReceiverObjectList = new ArrayList<>();
+
+
+    public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
+        angleReceiverObjectList.add(new AngleReceiverObject(update_every, angleReceiver));
+    }
+
+    public void unregisterReceiver(AngleReceiver angleReceiver) {
+        AngleReceiverObject toDelete = null;
+        for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
+            if(angleReceiverObject.getAngleReceiver() == angleReceiver){
+                toDelete = angleReceiverObject;
+            }
+        }
+        if(toDelete != null){
+            angleReceiverObjectList.remove(toDelete);
+        }
+    }
 
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
@@ -94,6 +141,7 @@ public class BluetoothService extends Service {
 
         /**
          * Funktion leitet Nachrichten vom
+         *
          * @param msg that comes from the Service to the Thread
          */
         @Override
@@ -107,19 +155,13 @@ public class BluetoothService extends Service {
                     break;
                 case "discover":
                     initialAngle = msg.getData().getBoolean("initialAngle");
-                    if (mBTAdapter.isDiscovering()) {
-                        mBTAdapter.cancelDiscovery();
-                        Toast.makeText(getApplicationContext(), R.string.bl_discovery_stopped, Toast.LENGTH_SHORT).show();
-                    } else {
+                    if (!mBTAdapter.isDiscovering()) {
                         if (mBTAdapter.isEnabled()) {
-                            Toast.makeText(getApplicationContext(), R.string.bl_discovery_started, Toast.LENGTH_SHORT).show();
                             if (!mBTAdapter.startDiscovery()) {
-                                Log.e(TAG, "Discovery could not be started");
+                                Log.d(TAG, "Discovery could not be started");
                             } else {
-                                Log.d(TAG, "Discovery started");
+                                Log.v(TAG, "Discovery started");
                             }
-                        } else {
-                            Toast.makeText(getApplicationContext(), R.string.bl_not_on, Toast.LENGTH_SHORT).show();
                         }
                     }
                     break;
@@ -193,7 +235,6 @@ public class BluetoothService extends Service {
 
     /**
      * Function gets called when the Service is started
-     *
      */
     @Override
     public void onCreate() {

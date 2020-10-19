@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -14,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.joniras.anglesensor.angle.AnglePair;
+import com.joniras.anglesensor.angle.interfaces.AngleReceiver;
 import com.joniras.anglesensor.angle.AngleSensor;
 import com.joniras.anglesensor.angle.SensorInformation;
 import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
@@ -21,7 +23,7 @@ import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 import java.util.Locale;
 
 
-public class MainActivity extends Activity implements View.OnClickListener, ISensorDataObserver, SeekBar.OnSeekBarChangeListener, TextView.OnEditorActionListener {
+public class MainActivity extends Activity implements View.OnClickListener, ISensorDataObserver, SeekBar.OnSeekBarChangeListener, TextView.OnEditorActionListener, AngleReceiver {
 
     // GUI Components
     private TextView mBluetoothStatus;
@@ -49,6 +51,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         angleResult = findViewById(R.id.angleresult);
     }
 
+
     private void displayBluetoothState(boolean isOn) {
         mBluetoothStatus.setText(isOn ? getString(R.string.bl_enabled) : getString(R.string.bL_disbaled));
     }
@@ -59,7 +62,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
             case R.id.connect:
                 try {
                     angleSensor.discover(initialAngle);
-                    mBluetoothStatus.setText("Searching for Sensor");
+                    mBluetoothStatus.setText(R.string.searching_for_sensor);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -152,7 +155,12 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     public void onDeviceConnected() {
         mBluetoothStatus.setText(R.string.bl_connected);
         angleResult.setVisibility(View.VISIBLE);
+        // angleSensor.registerReceiver(5000, this);
+        // angleSensor.registerReceiver(20000, rec20seconds);
     }
+
+
+    private AngleReceiver rec20seconds = a -> Log.i(TAG, "Got 20 seconds angles");
 
     @Override
     public void onDeviceDisconnected() {
@@ -176,7 +184,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
 
     @Override
     public void onDeviceNotFound() {
-        mBluetoothStatus.setText("Device not found");
+        mBluetoothStatus.setText(R.string.device_not_found);
     }
 
 
@@ -184,13 +192,15 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     protected void onDestroy() {
         super.onDestroy();
         angleSensor.removeObserver(this);
+        angleSensor.unregisterReceiver(this);
+        angleSensor.unregisterReceiver(rec20seconds);
     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         if(fromUser){
             this.sampleRate = progress;
-            ((EditText)findViewById(R.id.sampleRate)).setText(Integer.toString(progress));
+            ((EditText)findViewById(R.id.sampleRate)).setText(String.format(Locale.GERMAN, "%d", progress));
         }
     }
 
@@ -209,5 +219,12 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         sampleRate = Integer.parseInt(((EditText)v).getText().toString());
         ((SeekBar)findViewById(R.id.initialAngleSlider)).setProgress(sampleRate);
         return false;
+    }
+
+    @Override
+    public void processAngleDataMillis(AnglePair angles) {
+        Log.i(TAG,"Update all 5 seconds: "+angles);
+        angle_x.setText(String.format(Locale.GERMAN, "%.2f", angles.getX()));
+        angle_y.setText(String.format(Locale.GERMAN, "%.2f", angles.getY()));
     }
 }

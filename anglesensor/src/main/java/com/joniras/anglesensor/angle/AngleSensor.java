@@ -16,6 +16,7 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.joniras.anglesensor.angle.interfaces.AngleReceiver;
 import com.joniras.anglesensor.angle.interfaces.IAngleDataObserver;
 import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 
@@ -40,6 +41,10 @@ public class AngleSensor {
 
     // Der Service für die Bluetooth-Schnittstelle
     private static BluetoothService service;
+
+    private AngleSensor(){
+
+    }
 
     // unterschiedliche Observer für unterschiedliche Daten (siehe Interfaces)
     private static ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
@@ -171,7 +176,6 @@ public class AngleSensor {
     }
 
     /**
-     * Wirft eine Ausnahme, wenn Service nicht verbunden ist oder
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor verbunden oder nicht (siehe Parameter needsConnected)
      */
     private boolean validState(boolean needsConnected) throws IllegalStateException{
@@ -247,6 +251,20 @@ public class AngleSensor {
      */
     public void removeObserver(IAngleDataObserver observer) {
         angleObservers.remove(observer);
+    }
+
+    /**
+     * @return Singleton Instanz
+     */
+    public static AngleSensor getInstance() {
+        return instance;
+    }
+
+    /**
+     * @return Bluetooth-Adresse des Sensors, zu dem automatisch verbunden wird, wenn er gefunden wird
+     */
+    public String getIDOFSensor() {
+        return IDOFSensor;
     }
 
     /**
@@ -361,10 +379,19 @@ public class AngleSensor {
     }
 
     /**
+     * Observer benachrichtigen, dass der Sensor nicht gefunden werden konnte
+     */
+    private void notifySensorNotFound() {
+        for (ISensorDataObserver observer: angleSensorObservers) {
+            observer.onDeviceNotFound();
+        }
+    }
+
+    /**
      * Observer benachrichtigen, dass neue Winkel-Daten verfügbar sind
      * @param anglePair Daten des Sensors
      */
-    void notifyAngleDataChanged(AnglePair anglePair){
+    private void notifyAngleDataChanged(AnglePair anglePair){
         for (ISensorDataObserver observer: angleSensorObservers) {
             observer.onAngleDataChanged(anglePair);
         }
@@ -374,19 +401,31 @@ public class AngleSensor {
     }
 
     /**
-     * Observer benachrichtigen, dass der Sensor nicht gefunden werden konnte
+     * Sobald ein Gerät verbunden wurde, kann über diese Funktion ein Update angefordert werden im Abstand update_every
+     * Das update nach den angegebenen Millisekunden kann nicht garantiert werden wenn die SampleRate zu hoch gesetzt wurde
+     * @param update_every Der Abstand in Milliskeunden, nach denen der angleReceiver über neue Winkeldaten benachrichtigt wird
+     * @param angleReceiver bekommt Beanchrichtungen über Winkelwerte
      */
-    private void notifySensorNotFound() {
-        for (ISensorDataObserver observer: angleSensorObservers) {
-            observer.onDeviceNotFound();
+    public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
+        if(service != null){
+            service.registerReceiver(update_every,angleReceiver);
+        }else{
+            throw new IllegalStateException("Service not ready, wait for onDeviceConnected callback");
         }
     }
 
-    public static AngleSensor getInstance() {
-        return instance;
-    }
-    public String getIDOFSensor() {
-        return IDOFSensor;
+    /**
+     * Löschen des Empfängers um Fehler zu vermeiden (in onDestroy einbauen)
+     * @param angleReceiver Objekt, das registriert wurde
+     */
+    public void unregisterReceiver(AngleReceiver angleReceiver){
+        if(service != null){
+            service.unregisterReceiver(angleReceiver);
+        }else{
+            throw new IllegalStateException("Service not ready, wait for onDeviceConnected callback");
+        }
     }
 
+
 }
+
