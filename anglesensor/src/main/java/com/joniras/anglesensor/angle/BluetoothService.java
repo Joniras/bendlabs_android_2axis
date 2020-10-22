@@ -142,7 +142,7 @@ public class BluetoothService extends Service {
         /**
          * Funktion leitet Nachrichten vom
          *
-         * @param msg that comes from the Service to the Thread
+         * @param msg Nachricht vom Service and den Thread
          */
         @Override
         public void handleMessage(Message msg) {
