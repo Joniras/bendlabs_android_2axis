@@ -33,11 +33,26 @@ import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
  * Service, der mit der SensorCommunicator Objekt kommuniziert
  */
 public class BluetoothService extends Service {
-    private ServiceHandler serviceHandler;
+    private String TAG = "Service";
     private final IBinder binder = new LocalBinder();
     private AngleSensor angleSensor = AngleSensor.getInstance();
+    private BluetoothAdapter mBTAdapter;
+    private boolean initialAngle = false;
 
     private boolean found = false;
+
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
+        if (!mBTAdapter.cancelDiscovery()) {
+            Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState()));
+        } else {
+            Log.v(TAG, "Discovery stopped");
+        }
+    }
 
     public static final String ACTION_DISCOVERY_TIMEOUT = "aau.sensor_evaluation.ACTION_DISCOVERY_TIMEOUT";
 
@@ -82,9 +97,17 @@ public class BluetoothService extends Service {
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
         registerReceiver(blReceiver, filter);
-        sendToThread("discover", "initialAngle", initialAngle);
+        this.initialAngle = initialAngle;
+        if (!mBTAdapter.isDiscovering()) {
+            if (mBTAdapter.isEnabled()) {
+                if (!mBTAdapter.startDiscovery()) {
+                    Log.d(TAG, "Discovery could not be started");
+                } else {
+                    Log.v(TAG, "Discovery started");
+                }
+            }
+        }
     }
-
 
     private void notifyReceiver(AnglePair anglePair) {
         long current_time = Calendar.getInstance().getTimeInMillis();
@@ -103,12 +126,18 @@ public class BluetoothService extends Service {
     public BluetoothService() {
     }
 
-
     private List<AngleReceiverObject> angleReceiverObjectList = new ArrayList<>();
 
-
     public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
-        angleReceiverObjectList.add(new AngleReceiverObject(update_every, angleReceiver));
+        boolean found = false;
+        for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
+            if(angleReceiverObject.getAngleReceiver().equals(angleReceiver)){
+                found = true;
+            }
+        }
+        if(!found){
+            angleReceiverObjectList.add(new AngleReceiverObject(update_every, angleReceiver));
+        }
     }
 
     public void unregisterReceiver(AngleReceiver angleReceiver) {
@@ -123,128 +152,6 @@ public class BluetoothService extends Service {
         }
     }
 
-    // Handler that receives messages from the thread
-    private final class ServiceHandler extends Handler {
-        private String TAG = "Thread";
-        private BluetoothAdapter mBTAdapter;
-        private boolean initialAngle = false;
-
-        ServiceHandler(Looper looper) {
-            super(looper);
-            mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
-            if (!mBTAdapter.cancelDiscovery()) {
-                Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState()));
-            } else {
-                Log.v(TAG, "Discovery stopped");
-            }
-        }
-
-        /**
-         * Funktion leitet Nachrichten vom
-         *
-         * @param msg Nachricht vom Service and den Thread
-         */
-        @Override
-        public void handleMessage(Message msg) {
-            switch (Objects.requireNonNull(msg.getData().getString("ACTION"))) {
-                case "connect":
-                    String address = msg.getData().getString("address");
-                    Log.d("Thread", "Connecting to: " + address);
-                    //launch the SensorCommunicator who is responsible for the communication to the Sensor
-                    SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initialAngle);
-                    break;
-                case "discover":
-                    initialAngle = msg.getData().getBoolean("initialAngle");
-                    if (!mBTAdapter.isDiscovering()) {
-                        if (mBTAdapter.isEnabled()) {
-                            if (!mBTAdapter.startDiscovery()) {
-                                Log.d(TAG, "Discovery could not be started");
-                            } else {
-                                Log.v(TAG, "Discovery started");
-                            }
-                        }
-                    }
-                    break;
-                case "rate":
-                    int rate = msg.getData().getInt("rate");
-                    SensorCommunicator.getInstance().writeSampleRate(rate);
-                    break;
-                case "calibrate":
-                    SensorCommunicator.getInstance().calibrate();
-                    break;
-                case "reset":
-                    SensorCommunicator.getInstance().resetSensor();
-                    break;
-                case "softwarereset":
-                    SensorCommunicator.getInstance().softwareResetSensor();
-                    break;
-                case "disconnect":
-                    SensorCommunicator.getInstance().disconnect();
-                    break;
-                case "turnOn":
-                    SensorCommunicator.getInstance().turnOnNotifications();
-                    break;
-                case "turnOff":
-                    SensorCommunicator.getInstance().turnOffNotifications();
-                    break;
-                case "readSensorInformation":
-                    SensorCommunicator.getInstance().readSensorInformation();
-                    break;
-            }
-        }
-    }
-
-    public void connect(String address) {
-        sendToThread("connect", "address", address);
-    }
-
-    public void sendToThread(String action, String paramName, String param) {
-        Message m = new Message();
-        Bundle b = new Bundle();
-        b.putString(paramName, param);
-        b.putString("ACTION", action);
-        m.setData(b);
-        serviceHandler.sendMessage(m);
-    }
-
-    public void sendToThread(String action, String paramName, boolean param) {
-        Message m = new Message();
-        Bundle b = new Bundle();
-        b.putBoolean(paramName, param);
-        b.putString("ACTION", action);
-        m.setData(b);
-        serviceHandler.sendMessage(m);
-    }
-
-    public void sendToThread(String action, String paramName, int param) {
-        Message m = new Message();
-        Bundle b = new Bundle();
-        b.putInt(paramName, param);
-        b.putString("ACTION", action);
-        m.setData(b);
-        serviceHandler.sendMessage(m);
-    }
-
-    public void sendToThread(String action) {
-        Message m = new Message();
-        Bundle b = new Bundle();
-        b.putString("ACTION", action);
-        m.setData(b);
-        serviceHandler.sendMessage(m);
-    }
-
-    /**
-     * Function gets called when the Service is started
-     */
-    @Override
-    public void onCreate() {
-        //start Thread that Handles the communication with the Sensor (Service gets maybe killed when switchgin activities)
-        HandlerThread thread = new HandlerThread("AngleThread", THREAD_PRIORITY_BACKGROUND);
-        thread.start();
-
-        // the handler is used to communicate with the Thread
-        serviceHandler = new ServiceHandler(thread.getLooper());
-    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -260,7 +167,6 @@ public class BluetoothService extends Service {
 
     }
 
-
     @Override
     public IBinder onBind(Intent intent) {
         Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
@@ -272,4 +178,46 @@ public class BluetoothService extends Service {
         Toast.makeText(this, "service died", Toast.LENGTH_SHORT).show();
         unregisterReceiver(blReceiver);
     }
+
+    public void connect(String address){
+        Log.d(TAG, "Connecting to: " + address);
+        //launch the SensorCommunicator who is responsible for the communication to the Sensor
+        SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initialAngle);
+    }
+
+    public void setRate(int rate){
+        SensorCommunicator.getInstance().writeSampleRate(rate);
+    }
+
+    public void calibrate(){
+        SensorCommunicator.getInstance().calibrate();
+    }
+
+    public void resetCalibration(){
+        SensorCommunicator.getInstance().resetSensor();
+    }
+
+    public void resetSoftware(){
+        SensorCommunicator.getInstance().softwareResetSensor();
+    }
+
+    public void disconnect(){
+        SensorCommunicator.getInstance().disconnect();
+    }
+
+    public void turnOn(){
+        SensorCommunicator.getInstance().turnOnNotifications();
+    }
+
+    public void turnOff(){
+        SensorCommunicator.getInstance().turnOffNotifications();
+    }
+
+    public void readSensorInformation(){
+        SensorCommunicator.getInstance().readSensorInformation();
+    }
+
+
+
+
 }

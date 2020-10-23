@@ -43,12 +43,13 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         angleSensor.registerObserver(this);
 
         setContentView(R.layout.activity_main);
-        ((SeekBar)findViewById(R.id.initialAngleSlider)).setOnSeekBarChangeListener(this);
+        ((SeekBar)findViewById(R.id.sampleRateSlider)).setOnSeekBarChangeListener(this);
         ((EditText)findViewById(R.id.sampleRate)).setOnEditorActionListener(this);
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
         angle_y = findViewById(R.id.angle_y);
         angleResult = findViewById(R.id.angleresult);
+        findViewById(R.id.sampleRateSlider).setEnabled(false);
     }
 
 
@@ -87,7 +88,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                 break;
             case R.id.reset:
                 try {
-                    angleSensor.resetSensor();
+                    angleSensor.resetCalibration();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -153,17 +154,36 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
 
     @Override
     public void onDeviceConnected() {
+        findViewById(R.id.connect).setEnabled(false);
+        findViewById(R.id.initialAngle).setEnabled(true);
+        findViewById(R.id.sampleRate).setEnabled(true);
+        findViewById(R.id.sampleRateSlider).setEnabled(true);
+        findViewById(R.id.rateButton).setEnabled(true);
+        findViewById(R.id.calibrate).setEnabled(true);
+        findViewById(R.id.reset).setEnabled(true);
+        findViewById(R.id.resetSoftware).setEnabled(true);
+        findViewById(R.id.turnOn).setEnabled(true);
+        findViewById(R.id.turnOff).setEnabled(true);
+        findViewById(R.id.readSensorInformation).setEnabled(true);
+        findViewById(R.id.disconnect).setEnabled(true);
         mBluetoothStatus.setText(R.string.bl_connected);
         angleResult.setVisibility(View.VISIBLE);
-        // angleSensor.registerReceiver(5000, this);
-        // angleSensor.registerReceiver(20000, rec20seconds);
     }
-
-
-    private AngleReceiver rec20seconds = a -> Log.i(TAG, "Got 20 seconds angles");
 
     @Override
     public void onDeviceDisconnected() {
+        findViewById(R.id.connect).setEnabled(true);
+        findViewById(R.id.initialAngle).setEnabled(false);
+        findViewById(R.id.sampleRate).setEnabled(false);
+        findViewById(R.id.sampleRateSlider).setEnabled(false);
+        findViewById(R.id.rateButton).setEnabled(false);
+        findViewById(R.id.calibrate).setEnabled(false);
+        findViewById(R.id.reset).setEnabled(false);
+        findViewById(R.id.resetSoftware).setEnabled(false);
+        findViewById(R.id.turnOn).setEnabled(false);
+        findViewById(R.id.turnOff).setEnabled(false);
+        findViewById(R.id.readSensorInformation).setEnabled(false);
+        findViewById(R.id.disconnect).setEnabled(false);
         mBluetoothStatus.setText(R.string.bl_disconnected);
     }
 
@@ -193,7 +213,6 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         super.onDestroy();
         angleSensor.removeObserver(this);
         angleSensor.unregisterReceiver(this);
-        angleSensor.unregisterReceiver(rec20seconds);
     }
 
     @Override
@@ -217,7 +236,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         sampleRate = Integer.parseInt(((EditText)v).getText().toString());
-        ((SeekBar)findViewById(R.id.initialAngleSlider)).setProgress(sampleRate);
+        ((SeekBar)findViewById(R.id.sampleRateSlider)).setProgress(sampleRate);
         return false;
     }
 

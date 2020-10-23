@@ -30,11 +30,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private SupportMapFragment mapFragment;
     private FusedLocationProviderClient mFusedLocationProviderClient;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        AngleSensor.getInstance().registerReceiver(50, this);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -43,7 +44,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
         ((MyLayout)findViewById(R.id.mylayout)).registerObserver(this);
 
-        // Construct a FusedLocationProviderClient.
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
     }
 
@@ -53,8 +53,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ((MyLayout)findViewById(R.id.mylayout)).setMap(mapFragment.getView());
         mMap.moveCamera(CameraUpdateFactory.zoomTo(currentZoom));
         getDeviceLocation();
-        AngleSensor.getInstance().registerReceiver(50, this);
-        // register manual zoom and save it
+
+
         mMap.setOnCameraMoveListener(() -> {
             float zoom = mMap.getCameraPosition().zoom;
             if (zoom != currentZoom){

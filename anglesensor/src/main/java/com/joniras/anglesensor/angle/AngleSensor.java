@@ -21,6 +21,8 @@ import com.joniras.anglesensor.angle.interfaces.IAngleDataObserver;
 import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_CONNECTED;
@@ -49,6 +51,7 @@ public class AngleSensor {
     // unterschiedliche Observer für unterschiedliche Daten (siehe Interfaces)
     private static ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
     private static ArrayList<IAngleDataObserver> angleObservers = new ArrayList<>();
+    private static HashMap<Long,AngleReceiver> angleReceiver = new HashMap<Long, AngleReceiver>();
 
     // gibt an, ob der Sensor aktuell verbunden ist
     private boolean connected = false;
@@ -117,7 +120,7 @@ public class AngleSensor {
             if(rate < 1 || rate > 500){
                 throw new IllegalArgumentException("Rate must be between 1 and 500");
             }else{
-                service.sendToThread("rate", "rate", rate);
+                service.setRate(rate);
             }
         }
     }
@@ -129,7 +132,7 @@ public class AngleSensor {
     public void calibrate() throws IllegalStateException {
 
         if(validState(true)){
-            service.sendToThread("calibrate");
+            service.calibrate();
         }
     }
 
@@ -137,9 +140,9 @@ public class AngleSensor {
      * Setzt die Kalibrierung des Sensor zurück auf den Originalzustand bei Auslieferung
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
-    public void resetSensor() throws IllegalStateException {
+    public void resetCalibration() throws IllegalStateException {
         if(validState(true)){
-            service.sendToThread("reset");
+            service.resetCalibration();
         }
     }
 
@@ -149,7 +152,7 @@ public class AngleSensor {
      */
     public void resetSensorSoftware() throws IllegalStateException {
         if(validState(true)){
-            service.sendToThread("softwarereset");
+            service.resetSoftware();
         }
     }
 
@@ -160,7 +163,7 @@ public class AngleSensor {
     public void disconnect() throws IllegalStateException {
         // If service is null probably something with permissions is wrong
         if(validState(true)){
-            service.sendToThread("disconnect");
+            service.disconnect();
         }
     }
 
@@ -171,7 +174,7 @@ public class AngleSensor {
     public void turnOn() throws IllegalStateException {
         // If service is null probably something with permissions is wrong
         if(validState(true)){
-            service.sendToThread("turnOn");
+            service.turnOn();
         }
     }
 
@@ -200,7 +203,7 @@ public class AngleSensor {
      */
     public void turnOff() throws IllegalStateException {
         if(validState(true)){
-            service.sendToThread("turnOff");
+            service.turnOff();
         }
     }
 
@@ -211,7 +214,7 @@ public class AngleSensor {
      */
     public void readSensorInformation() throws IllegalStateException {
         if(validState(true)){
-            service.sendToThread("readSensorInformation");
+            service.readSensorInformation();
         }
     }
 
@@ -320,6 +323,7 @@ public class AngleSensor {
             // Bind Service to Activity
             BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
             AngleSensor.service = binder.getService();
+            AngleSensor.getInstance().notifyServiceReady();
         }
 
         @Override
@@ -339,6 +343,12 @@ public class AngleSensor {
         }
 
     };
+
+    private void notifyServiceReady() {
+        for(Map.Entry<Long, AngleReceiver> entry : angleReceiver.entrySet()) {
+            service.registerReceiver(entry.getKey(),entry.getValue());
+        }
+    }
 
     /**
      * Observer benachrichtigen, wenn der Sensor verbunden wurde
@@ -407,6 +417,10 @@ public class AngleSensor {
      * @param angleReceiver bekommt Beanchrichtungen über Winkelwerte
      */
     public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
+        if(!this.angleReceiver.containsValue(angleReceiver)){
+            this.angleReceiver.put(new Long(update_every
+            ), angleReceiver);
+        }
         if(service != null){
             service.registerReceiver(update_every,angleReceiver);
         }else{

@@ -104,7 +104,7 @@
         android:text="@string/go_to_maps" />
 
     <SeekBar
-        android:id="@+id/initialAngleSlider"
+        android:id="@+id/sampleRateSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="500"
@@ -116,18 +116,20 @@
         android:id="@+id/sampleRate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:autofillHints="@string/sample_rate"
         android:ems="10"
+        android:enabled="false"
         android:hint="@string/sample_rate"
         android:inputType="number"
         android:maxEms="16483"
         android:minEms="1"
-        android:text="@string/default_sample_rate"
-        android:autofillHints="@string/sample_rate" />
+        android:text="@string/default_sample_rate" />
 
     <Button
         android:id="@+id/rateButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/set_sample_rate" />
 
@@ -135,6 +137,7 @@
         android:id="@+id/calibrate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/calibrate" />
 
@@ -142,6 +145,7 @@
         android:id="@+id/reset"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/reset_calibration" />
 
@@ -149,6 +153,7 @@
         android:id="@+id/resetSoftware"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/reset_sensor_software" />
 
@@ -156,12 +161,15 @@
         android:id="@+id/disconnect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/disconnect" />
+
     <Button
         android:id="@+id/turnOn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/turn_on_notifications" />
 
@@ -169,6 +177,7 @@
         android:id="@+id/turnOff"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/turn_off_notifications" />
 
@@ -176,6 +185,7 @@
         android:id="@+id/readSensorInformation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:enabled="false"
         android:onClick="onClick"
         android:text="@string/read_sensor_information" />
 
