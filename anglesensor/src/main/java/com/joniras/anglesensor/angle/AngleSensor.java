@@ -16,7 +16,7 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.joniras.anglesensor.angle.interfaces.AngleReceiver;
+import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
 import com.joniras.anglesensor.angle.interfaces.IAngleDataObserver;
 import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 
@@ -51,7 +51,7 @@ public class AngleSensor {
     // unterschiedliche Observer für unterschiedliche Daten (siehe Interfaces)
     private ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
     private ArrayList<IAngleDataObserver> angleObservers = new ArrayList<>();
-    private HashMap<Long,AngleReceiver> angleReceiver = new HashMap<>();
+    private HashMap<Long, IAngleReceiver> angleReceiver = new HashMap<>();
 
     // gibt an, ob der Sensor aktuell verbunden ist
     private boolean connected = false;
@@ -345,7 +345,7 @@ public class AngleSensor {
     };
 
     private void notifyServiceReady() {
-        for(Map.Entry<Long, AngleReceiver> entry : angleReceiver.entrySet()) {
+        for(Map.Entry<Long, IAngleReceiver> entry : angleReceiver.entrySet()) {
             service.registerReceiver(entry.getKey(),entry.getValue());
         }
     }
@@ -416,7 +416,7 @@ public class AngleSensor {
      * @param update_every Der Abstand in Milliskeunden, nach denen der angleReceiver über neue Winkeldaten benachrichtigt wird
      * @param angleReceiver bekommt Beanchrichtungen über Winkelwerte
      */
-    public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
+    public void registerReceiver(long update_every, IAngleReceiver angleReceiver) {
         if(!this.angleReceiver.containsValue(angleReceiver)){
             this.angleReceiver.put(update_every, angleReceiver);
         }
@@ -431,7 +431,7 @@ public class AngleSensor {
      * Löschen des Empfängers um Fehler zu vermeiden (in onDestroy einbauen)
      * @param angleReceiver Objekt, das registriert wurde
      */
-    public void unregisterReceiver(AngleReceiver angleReceiver){
+    public void unregisterReceiver(IAngleReceiver angleReceiver){
         if(service != null){
             service.unregisterReceiver(angleReceiver);
         }else{

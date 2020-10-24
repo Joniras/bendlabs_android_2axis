@@ -2,6 +2,9 @@ package com.joniras.anglesensor.angle;
 
 import java.io.Serializable;
 
+/**
+ * Klasse zum erleichterten Transport und Zugriff auf Sensor-Informationen (die am Sensor selbst gespeichert sind)
+ */
 public class SensorInformation implements Serializable {
     private String manufacturer;
     private String model;

@@ -12,7 +12,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.joniras.anglesensor.angle.interfaces.AngleReceiver;
+import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -118,7 +118,7 @@ public class BluetoothService extends Service {
     }
 
 
-    public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
+    public void registerReceiver(long update_every, IAngleReceiver angleReceiver) {
         boolean found = false;
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
             if (angleReceiverObject.getAngleReceiver().equals(angleReceiver)) {
@@ -131,7 +131,7 @@ public class BluetoothService extends Service {
         }
     }
 
-    public void unregisterReceiver(AngleReceiver angleReceiver) {
+    public void unregisterReceiver(IAngleReceiver angleReceiver) {
         AngleReceiverObject toDelete = null;
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
             if(angleReceiverObject.getAngleReceiver() == angleReceiver){

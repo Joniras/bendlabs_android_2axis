@@ -1,7 +1,7 @@
 package com.joniras.anglesensor.angle;
 
 /**
- * This class's only purpose is to contain the X and Y Values
+ * Klasse zum erleichterten Transport und Speichern der Winkeldaten
  */
 public class AnglePair {
     private float x;
