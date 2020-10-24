@@ -3,11 +3,14 @@ package com.joniras.anglesensor.angle;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -28,12 +31,16 @@ import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
 public class BluetoothService extends Service {
     private String TAG = "Service";
     private final IBinder binder = new LocalBinder();
-    private AngleSensor angleSensor = AngleSensor.getInstance();
     private BluetoothAdapter mBTAdapter;
     private boolean initialAngle = false;
     private boolean found = false;
 
+    // Zeit, nach der aufgehört wird nach dem Sensor zu suchen
+    private final static int bleDiscoveryTimeout = 5000;
+
     private List<AngleReceiverObject> angleReceiverObjectList = new ArrayList<>();
+
+    private Handler handler = new Handler();
 
     @Override
     public void onCreate() {
@@ -50,7 +57,7 @@ public class BluetoothService extends Service {
     public static final String ACTION_DISCOVERY_TIMEOUT = "aau.sensor_evaluation.ACTION_DISCOVERY_TIMEOUT";
 
     /**
-     * Empfängt den Broadcast bei Änderung des Bleutooth-Verbindungs oder Suchen-Zustands
+     * Empfängt den Broadcast bei Änderung des Bluetooth-Verbindungs oder Suchen-Zustands
      * Initialisiert Verbindung zum Sensor, wenn dieser gefunden wurde
      */
     final BroadcastReceiver blReceiver = new BroadcastReceiver() {
@@ -58,20 +65,6 @@ public class BluetoothService extends Service {
         public void onReceive(Context context, Intent intent) {
             assert intent.getAction() != null;
             switch (intent.getAction()) {
-                // Ein Bluetooth-Gerät wurde gefunden
-                case BluetoothDevice.ACTION_FOUND:
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (device != null && device.getAddress().equals(angleSensor.getIDOFSensor())) {
-                        found = true;
-                        connect(device.getAddress());
-                    }
-                    break;
-                // Das Suchen nach neuen Geräten hat aufgehört
-                case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
-                    if (!found) {
-                        sendBroadcast(new Intent(ACTION_DISCOVERY_TIMEOUT));
-                    }
-                    break;
                 case ACTION_ANGLE_DATA_AVAILABLE:
                     notifyReceiver(new AnglePair(intent.getFloatExtra(EXTRA_ANGLE_X, 0), intent.getFloatExtra(EXTRA_ANGLE_Y, 0)));
             }
@@ -84,23 +77,44 @@ public class BluetoothService extends Service {
      * @param initialAngle gibt an, ob Winkel-Daten direkt nach entstandener Verbindung abonniert werden sollen
      */
     public void discover(boolean initialAngle) {
-        found = false;
         IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_FOUND);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
         registerReceiver(blReceiver, filter);
         this.initialAngle = initialAngle;
-        if (!mBTAdapter.isDiscovering()) {
-            if (mBTAdapter.isEnabled()) {
-                if (!mBTAdapter.startDiscovery()) {
-                    Log.d(TAG, "Discovery could not be started");
-                } else {
-                    Log.v(TAG, "Discovery started");
+        if (mBTAdapter.isEnabled()) {
+            handler.removeCallbacksAndMessages(null);
+            found = false;
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mBTAdapter.getBluetoothLeScanner().stopScan(bleScanCallback);
+                    if (!found) {
+                        sendBroadcast(new Intent(ACTION_DISCOVERY_TIMEOUT));
+                    }
                 }
-            }
+            }, bleDiscoveryTimeout);
+            mBTAdapter.getBluetoothLeScanner().startScan(bleScanCallback);
         }
     }
+
+    private ScanCallback bleScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
+            String address = result.getDevice().getAddress();
+            if(address.equals(AngleSensor.getInstance().getIDOFSensor())){
+                found = true;
+                connect(address);
+            }
+        }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            super.onScanFailed(errorCode);
+            sendBroadcast(new Intent(ACTION_DISCOVERY_TIMEOUT));
+        }
+    };
+
 
     private void notifyReceiver(AnglePair anglePair) {
         long current_time = Calendar.getInstance().getTimeInMillis();
@@ -126,7 +140,7 @@ public class BluetoothService extends Service {
                 break;
             }
         }
-        if(!found){
+        if (!found) {
             angleReceiverObjectList.add(new AngleReceiverObject(update_every, angleReceiver));
         }
     }
@@ -134,11 +148,11 @@ public class BluetoothService extends Service {
     public void unregisterReceiver(IAngleReceiver angleReceiver) {
         AngleReceiverObject toDelete = null;
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
-            if(angleReceiverObject.getAngleReceiver() == angleReceiver){
+            if (angleReceiverObject.getAngleReceiver() == angleReceiver) {
                 toDelete = angleReceiverObject;
             }
         }
-        if(toDelete != null){
+        if (toDelete != null) {
             angleReceiverObjectList.remove(toDelete);
         }
     }
@@ -170,45 +184,43 @@ public class BluetoothService extends Service {
         unregisterReceiver(blReceiver);
     }
 
-    public void connect(String address){
+    public void connect(String address) {
         Log.d(TAG, "Connecting to: " + address);
         //launch the SensorCommunicator who is responsible for the communication to the Sensor
         SensorCommunicator.getInstance().connect(mBTAdapter.getRemoteDevice(address), BluetoothService.this, initialAngle);
     }
 
-    public void setRate(int rate){
+    public void setRate(int rate) {
         SensorCommunicator.getInstance().writeSampleRate(rate);
     }
 
-    public void calibrate(){
+    public void calibrate() {
         SensorCommunicator.getInstance().calibrate();
     }
 
-    public void resetCalibration(){
+    public void resetCalibration() {
         SensorCommunicator.getInstance().resetSensor();
     }
 
-    public void resetSoftware(){
+    public void resetSoftware() {
         SensorCommunicator.getInstance().softwareResetSensor();
     }
 
-    public void disconnect(){
+    public void disconnect() {
         SensorCommunicator.getInstance().disconnect();
     }
 
-    public void turnOn(){
+    public void turnOn() {
         SensorCommunicator.getInstance().turnOnNotifications();
     }
 
-    public void turnOff(){
+    public void turnOff() {
         SensorCommunicator.getInstance().turnOffNotifications();
     }
 
-    public void readSensorInformation(){
+    public void readSensorInformation() {
         SensorCommunicator.getInstance().readSensorInformation();
     }
-
-
 
 
 }

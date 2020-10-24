@@ -23,6 +23,7 @@ import com.joniras.anglesensor.angle.interfaces.ISensorDataObserver;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_GATT_CONNECTED;
@@ -44,7 +45,9 @@ public class AngleSensor {
     // Der Service für die Bluetooth-Schnittstelle
     private static BluetoothService service;
 
-    private AngleSensor(){
+    public static final int permissionRequestCode = new Random().nextInt();
+
+    private AngleSensor() {
 
     }
 
@@ -56,21 +59,27 @@ public class AngleSensor {
     // gibt an, ob der Sensor aktuell verbunden ist
     private boolean connected = false;
 
+    //zur Überprüfung, ob die Funktion "start" aufgerufen wurde
+    private boolean started = false;
+
     // Der Sensor der AAU mit der Inventarnummer "ISYS-2019-122"
     private String IDOFSensor = "FA:0E:BA:83:09:8A";
 
     /**
      * @param id Die Bluetooth-Mac-Adresse des Sensor, zu dem verbunden werden soll (standardmässig der Sensor der AAU)
      */
-    public void setIDOfSensor(String id){
+    public void setIDOfSensor(String id) {
         IDOFSensor = id;
     }
 
+
     /**
      * Initializiert den Empfänger der Broadcasts und überprüft die Berechtigungen
+     *
      * @param context für den Service (bentötigt zum Starten des Services)
      */
     public void start(Activity context) {
+        started = true;
         // Service starten und an den Context binden  (Service stirbt mit Activity)
         Intent intent = new Intent(context, BluetoothService.class);
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
@@ -88,16 +97,17 @@ public class AngleSensor {
 
         // Berechtigungen prüfen
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
+            ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, permissionRequestCode);
     }
 
     /**
      * Startet die Suche nach dem Sensor und verbindet sich mit diesem falls erreichbar
+     *
      * @param initialAngle Bei true werden die Winkeldaten sofort abonniert, ansonsten erst mit turnOn()
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor bereits verbunden
      */
     public void discover(boolean initialAngle) throws IllegalStateException {
-        if(validState(false)){
+        if (validState(false)) {
             service.discover(initialAngle);
         }
     }
@@ -105,9 +115,10 @@ public class AngleSensor {
     /**
      * Startet die Suche nach dem Sensor und verbindet sich mit diesem falls erreichbar
      * Winkeldaten werden sofort abonniert
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor bereits verbunden
      */
-    public void discover() throws IllegalStateException{
+    public void discover() throws IllegalStateException {
         discover(true);
     }
 
@@ -116,10 +127,10 @@ public class AngleSensor {
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void setRate(int rate) throws IllegalStateException {
-        if(validState(true)){
-            if(rate < 1 || rate > 500){
+        if (validState(true)) {
+            if (rate < 1 || rate > 500) {
                 throw new IllegalArgumentException("Rate must be between 1 and 500");
-            }else{
+            } else {
                 service.setRate(rate);
             }
         }
@@ -127,53 +138,54 @@ public class AngleSensor {
 
     /**
      * Kalibriert den Sensor auf den aktuellen Winkel in dem er gebogen ist
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void calibrate() throws IllegalStateException {
 
-        if(validState(true)){
+        if (validState(true)) {
             service.calibrate();
         }
     }
 
     /**
      * Setzt die Kalibrierung des Sensor zurück auf den Originalzustand bei Auslieferung
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void resetCalibration() throws IllegalStateException {
-        if(validState(true)){
+        if (validState(true)) {
             service.resetCalibration();
         }
     }
 
     /**
      * Setzt die Software des Sensors zurück auf den Auslieferungszustand (bricht Verbdindung zum Sensor ab, da der Sensor neu startet)
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void resetSensorSoftware() throws IllegalStateException {
-        if(validState(true)){
+        if (validState(true)) {
             service.resetSoftware();
         }
     }
 
     /**
-     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void disconnect() throws IllegalStateException {
         // If service is null probably something with permissions is wrong
-        if(validState(true)){
+        if (validState(true)) {
             service.disconnect();
         }
     }
 
     /**
-     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void turnOn() throws IllegalStateException {
         // If service is null probably something with permissions is wrong
-        if(validState(true)){
+        if (validState(true)) {
             service.turnOn();
         }
     }
@@ -181,28 +193,34 @@ public class AngleSensor {
     /**
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor verbunden oder nicht (siehe Parameter needsConnected)
      */
-    private boolean validState(boolean needsConnected) throws IllegalStateException{
-        if(service != null){
-            if(connected == needsConnected) {
-                return true;
-            }else{
-                if (needsConnected) {
-                    throw new IllegalStateException("Device not connected, try discover first");
+    private boolean validState(boolean needsConnected) throws IllegalStateException {
+        if (started) {
+            if (service != null) {
+                if (connected == needsConnected) {
+                    return true;
                 } else {
-                    throw new IllegalStateException("Device already connected, try disconnect first");
+                    if (needsConnected) {
+                        throw new IllegalStateException("Device not connected, try discover first");
+                    } else {
+                        throw new IllegalStateException("Device already connected, try disconnect first");
+                    }
                 }
+            } else {
+                throw new IllegalStateException("Service not ready");
             }
-        }else{
-            throw new IllegalStateException("Service not ready");
+        } else {
+            throw new IllegalStateException("Please call function 'start' first, to provide a context for the service");
         }
+
     }
 
     /**
      * Schaltet die Benachrichtigungen über neue Winkelwerte aus (am Sensor)
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void turnOff() throws IllegalStateException {
-        if(validState(true)){
+        if (validState(true)) {
             service.turnOff();
         }
     }
@@ -210,20 +228,22 @@ public class AngleSensor {
     /**
      * Liest die Sensor-Informationen (Software, Name, Model, etc)
      * Informationen kommen verzögert mit onSensorInformation() zurück
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void readSensorInformation() throws IllegalStateException {
-        if(validState(true)){
+        if (validState(true)) {
             service.readSensorInformation();
         }
     }
 
     /**
      * Mit dieser Funktion registrieren wenn erweiterte Informationen gefordert sind(Sensorinformationen, Statusupdates, etc)
+     *
      * @param observer ISensorDataObserver
      */
     public void registerObserver(ISensorDataObserver observer) {
-        if(!angleSensorObservers.contains(observer)) {
+        if (!angleSensorObservers.contains(observer)) {
             angleSensorObservers.add(observer);
         }
     }
@@ -231,6 +251,7 @@ public class AngleSensor {
 
     /**
      * Entfernt den Observer von der Liste
+     *
      * @param observer ISensorDataObserver
      */
     public void removeObserver(ISensorDataObserver observer) {
@@ -239,10 +260,11 @@ public class AngleSensor {
 
     /**
      * Mit dieser Funktion registrieren, wenn nur Winkeldaten gewünscht sind
+     *
      * @param observer IAngleDataObserver
      */
     public void registerObserver(IAngleDataObserver observer) {
-        if(!angleObservers.contains(observer)) {
+        if (!angleObservers.contains(observer)) {
             angleObservers.add(observer);
         }
     }
@@ -250,6 +272,7 @@ public class AngleSensor {
 
     /**
      * Entfernt den Observer von der Liste
+     *
      * @param observer IAngleDataObserver
      */
     public void removeObserver(IAngleDataObserver observer) {
@@ -274,7 +297,7 @@ public class AngleSensor {
      * Empfängt die Broadcasts vom BluetoothService, SensorCommunicator sowie BluetoothAdapter
      * Leitet die Informationen weiter an die jeweiligen Empfänger
      */
-   private final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver blEReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -301,7 +324,7 @@ public class AngleSensor {
                     notifyDeviceDisconnected();
                     break;
                 case ACTION_SENSOR_INFORMATION:
-                    notifySensorInformation((SensorInformation)intent.getSerializableExtra(EXTRA_SENSOR_INFORMATION));
+                    notifySensorInformation((SensorInformation) intent.getSerializableExtra(EXTRA_SENSOR_INFORMATION));
                     break;
                 case ACTION_DISCOVERY_TIMEOUT:
                     notifySensorNotFound();
@@ -313,13 +336,15 @@ public class AngleSensor {
         }
     };
 
-    /** Defines callbacks for service binding, passed to bindService() */
+    /**
+     * Defines callbacks for service binding, passed to bindService()
+     */
     private ServiceConnection connection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className,
                                        IBinder service) {
-            Log.d(TAG,"Service connected");
+            Log.d(TAG, "Service connected");
             // Bind Service to Activity
             BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
             AngleSensor.service = binder.getService();
@@ -328,33 +353,33 @@ public class AngleSensor {
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
-            Log.d(TAG,"Service disconncted");
+            Log.d(TAG, "Service disconncted");
             AngleSensor.service = null;
         }
 
         @Override
         public void onBindingDied(ComponentName name) {
-            Log.d(TAG,"Service binding died");
+            Log.d(TAG, "Service binding died");
         }
 
         @Override
         public void onNullBinding(ComponentName name) {
-            Log.d(TAG,"Service NULL binding");
+            Log.d(TAG, "Service NULL binding");
         }
 
     };
 
     private void notifyServiceReady() {
-        for(Map.Entry<Long, IAngleReceiver> entry : angleReceiver.entrySet()) {
-            service.registerReceiver(entry.getKey(),entry.getValue());
+        for (Map.Entry<Long, IAngleReceiver> entry : angleReceiver.entrySet()) {
+            service.registerReceiver(entry.getKey(), entry.getValue());
         }
     }
 
     /**
      * Observer benachrichtigen, wenn der Sensor verbunden wurde
      */
-    private void notifyDeviceConnected(){
-        for (ISensorDataObserver observer: angleSensorObservers) {
+    private void notifyDeviceConnected() {
+        for (ISensorDataObserver observer : angleSensorObservers) {
             observer.onDeviceConnected();
         }
     }
@@ -362,28 +387,30 @@ public class AngleSensor {
     /**
      * Observer benachrichtigen, wenn die Verbindung zum Sensor abgebrochen wurde
      */
-    private void notifyDeviceDisconnected(){
-        for (ISensorDataObserver observer: angleSensorObservers) {
+    private void notifyDeviceDisconnected() {
+        for (ISensorDataObserver observer : angleSensorObservers) {
             observer.onDeviceDisconnected();
         }
     }
 
     /**
      * Observer benachrichtigen, dass sich der Bluetooth-Status des Handys verändert hat
+     *
      * @param isOn gibt an, ob Bluetooth an oder aus ist
      */
-    private void notifyBluetoothStateChanged(boolean isOn){
-        for (ISensorDataObserver observer: angleSensorObservers) {
+    private void notifyBluetoothStateChanged(boolean isOn) {
+        for (ISensorDataObserver observer : angleSensorObservers) {
             observer.onBluetoothStateChanged(isOn);
         }
     }
 
     /**
      * Observer benachrichtigen, dass die Geräteinformationen angekommen sind
+     *
      * @param info Sensor information
      */
-    private void notifySensorInformation(SensorInformation info){
-        for (ISensorDataObserver observer: angleSensorObservers) {
+    private void notifySensorInformation(SensorInformation info) {
+        for (ISensorDataObserver observer : angleSensorObservers) {
             observer.onSensorInformation(info);
         }
     }
@@ -392,20 +419,21 @@ public class AngleSensor {
      * Observer benachrichtigen, dass der Sensor nicht gefunden werden konnte
      */
     private void notifySensorNotFound() {
-        for (ISensorDataObserver observer: angleSensorObservers) {
+        for (ISensorDataObserver observer : angleSensorObservers) {
             observer.onDeviceNotFound();
         }
     }
 
     /**
      * Observer benachrichtigen, dass neue Winkel-Daten verfügbar sind
+     *
      * @param anglePair Daten des Sensors
      */
-    private void notifyAngleDataChanged(AnglePair anglePair){
-        for (ISensorDataObserver observer: angleSensorObservers) {
+    private void notifyAngleDataChanged(AnglePair anglePair) {
+        for (ISensorDataObserver observer : angleSensorObservers) {
             observer.onAngleDataChanged(anglePair);
         }
-        for (IAngleDataObserver observer: angleObservers) {
+        for (IAngleDataObserver observer : angleObservers) {
             observer.onAngleDataChanged(anglePair);
         }
     }
@@ -413,28 +441,30 @@ public class AngleSensor {
     /**
      * Sobald ein Gerät verbunden wurde, kann über diese Funktion ein Update angefordert werden im Abstand update_every
      * Das update nach den angegebenen Millisekunden kann nicht garantiert werden wenn die SampleRate zu hoch gesetzt wurde
-     * @param update_every Der Abstand in Milliskeunden, nach denen der angleReceiver über neue Winkeldaten benachrichtigt wird
+     *
+     * @param update_every  Der Abstand in Milliskeunden, nach denen der angleReceiver über neue Winkeldaten benachrichtigt wird
      * @param angleReceiver bekommt Beanchrichtungen über Winkelwerte
      */
     public void registerReceiver(long update_every, IAngleReceiver angleReceiver) {
-        if(!this.angleReceiver.containsValue(angleReceiver)){
+        if (!this.angleReceiver.containsValue(angleReceiver)) {
             this.angleReceiver.put(update_every, angleReceiver);
         }
-        if(service != null){
-            service.registerReceiver(update_every,angleReceiver);
-        }else{
+        if (service != null) {
+            service.registerReceiver(update_every, angleReceiver);
+        } else {
             throw new IllegalStateException("Service not ready, wait for onDeviceConnected callback");
         }
     }
 
     /**
      * Löschen des Empfängers um Fehler zu vermeiden (in onDestroy einbauen)
+     *
      * @param angleReceiver Objekt, das registriert wurde
      */
-    public void unregisterReceiver(IAngleReceiver angleReceiver){
-        if(service != null){
+    public void unregisterReceiver(IAngleReceiver angleReceiver) {
+        if (service != null) {
             service.unregisterReceiver(angleReceiver);
-        }else{
+        } else {
             throw new IllegalStateException("Service not ready, wait for onDeviceConnected callback");
         }
     }

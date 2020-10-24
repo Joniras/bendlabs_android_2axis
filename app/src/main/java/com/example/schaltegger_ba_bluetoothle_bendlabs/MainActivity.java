@@ -3,6 +3,7 @@ package com.example.schaltegger_ba_bluetoothle_bendlabs;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -13,6 +14,8 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import com.joniras.anglesensor.angle.AnglePair;
 import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
@@ -43,8 +46,8 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         angleSensor.registerObserver(this);
 
         setContentView(R.layout.activity_main);
-        ((SeekBar)findViewById(R.id.sampleRateSlider)).setOnSeekBarChangeListener(this);
-        ((EditText)findViewById(R.id.sampleRate)).setOnEditorActionListener(this);
+        ((SeekBar) findViewById(R.id.sampleRateSlider)).setOnSeekBarChangeListener(this);
+        ((EditText) findViewById(R.id.sampleRate)).setOnEditorActionListener(this);
         mBluetoothStatus = findViewById(R.id.bluetoothStatus);
         angle_x = findViewById(R.id.angle_x);
         angle_y = findViewById(R.id.angle_y);
@@ -52,6 +55,19 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
         findViewById(R.id.sampleRateSlider).setEnabled(false);
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == AngleSensor.permissionRequestCode) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Standortdaten erlaubt
+                Log.d(TAG, "Device Location Access granted");
+            } else {
+                // Standortdaten verweigert
+                Log.d(TAG, "Device Location Access blocked");
+            }
+        }
+    }
 
     private void displayBluetoothState(boolean isOn) {
         mBluetoothStatus.setText(isOn ? getString(R.string.bl_enabled) : getString(R.string.bL_disbaled));
@@ -59,7 +75,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
 
     @Override
     public void onClick(View v) {
-        switch(v.getId()){
+        switch (v.getId()) {
             case R.id.connect:
                 try {
                     angleSensor.discover(initialAngle);
@@ -73,8 +89,8 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                 startActivity(intent);
                 break;
             case R.id.rateButton:
-                int rate = Integer.parseInt(((EditText)findViewById(R.id.sampleRate)).getText().toString());
-                if(rate >= 0){
+                int rate = Integer.parseInt(((EditText) findViewById(R.id.sampleRate)).getText().toString());
+                if (rate >= 0) {
                     try {
                         angleSensor.setRate(rate);
                         Toast.makeText(this, "Sample rate set", Toast.LENGTH_LONG).show();
@@ -82,7 +98,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                         Toast.makeText(this, "Sample rate could not be set", Toast.LENGTH_LONG).show();
                         e.printStackTrace();
                     }
-                }else{
+                } else {
                     Toast.makeText(this, "Rate is not valid", Toast.LENGTH_LONG).show();
                 }
                 break;
@@ -136,7 +152,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
                 }
                 break;
             case R.id.initialAngle:
-                initialAngle = ((Switch)findViewById(R.id.initialAngle)).isChecked();
+                initialAngle = ((Switch) findViewById(R.id.initialAngle)).isChecked();
                 break;
         }
     }
@@ -217,9 +233,9 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        if(fromUser){
+        if (fromUser) {
             this.sampleRate = progress;
-            ((EditText)findViewById(R.id.sampleRate)).setText(String.format(Locale.GERMAN, "%d", progress));
+            ((EditText) findViewById(R.id.sampleRate)).setText(String.format(Locale.GERMAN, "%d", progress));
         }
     }
 
@@ -235,14 +251,14 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
 
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        sampleRate = Integer.parseInt(((EditText)v).getText().toString());
-        ((SeekBar)findViewById(R.id.sampleRateSlider)).setProgress(sampleRate);
+        sampleRate = Integer.parseInt(((EditText) v).getText().toString());
+        ((SeekBar) findViewById(R.id.sampleRateSlider)).setProgress(sampleRate);
         return false;
     }
 
     @Override
     public void processAngleDataMillis(AnglePair angles) {
-        Log.i(TAG,"Update all 5 seconds: "+angles);
+        Log.i(TAG, "Update all 5 seconds: " + angles);
         angle_x.setText(String.format(Locale.GERMAN, "%.2f", angles.getX()));
         angle_y.setText(String.format(Locale.GERMAN, "%.2f", angles.getY()));
     }
