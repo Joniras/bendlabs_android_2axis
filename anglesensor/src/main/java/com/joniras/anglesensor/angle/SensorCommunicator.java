@@ -1,5 +1,6 @@
 package com.joniras.anglesensor.angle;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -69,6 +70,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_GDI_MANUFACTURER = convertFromInteger(0x2A29);
     final static UUID BLCHARACTERISTIC_GDI_MODEL_NUMBER = convertFromInteger(0x2A24);
 
+    @SuppressLint("StaticFieldLeak")
     private static SensorCommunicator instance = new SensorCommunicator();
 
     private static SensorInformation info = new SensorInformation();
@@ -103,8 +105,10 @@ public class SensorCommunicator extends BluetoothGattCallback {
         this.initalAngle = initialAngle;
     }
 
-    // Funktion wird aufgerufen bei Änderungen der Verbindung
-    // entsprechend wird AngleSensor über einen Broadcast informiert
+    /**
+     * Funktion wird aufgerufen bei Änderungen der Verbindung
+     * entsprechend wird AngleSensor über einen Broadcast informiert
+     */
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         super.onConnectionStateChange(gatt, status, newState);
@@ -251,7 +255,9 @@ public class SensorCommunicator extends BluetoothGattCallback {
         }
     }
 
-    // Callback-Funktion die aufgerufen wird, wenn eine angeforderte Charakteristik als Wert zurück kommt
+    /**
+     * Callback-Funktion die aufgerufen wird, wenn eine angeforderte Charakteristik als Wert zurück kommt
+     */
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         super.onCharacteristicRead(gatt, characteristic, status);
@@ -289,12 +295,14 @@ public class SensorCommunicator extends BluetoothGattCallback {
                                         BluetoothGattCharacteristic characteristic) {
         if (characteristic.getUuid().equals(BLCHARACTERISTIC_A_ANGLE)) {
             byte[] data = characteristic.getValue();
+            // Nach dem Beschreiben der Winkel-Charakteristik (calibratem resetm etc) kommt ein ungültiger Winkel-Wert mit Länge 4
             if (data.length > 7) {
-                float a0 = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
-                float a1 = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+                // laut Datenblatt sind die ersten 4 Byte der X-Wert und die folgenden 4 Byte der Y-Wert
+                float angle_x = ByteBuffer.wrap(Arrays.copyOfRange(data, 0, 4)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+                float angle_y = ByteBuffer.wrap(Arrays.copyOfRange(data, 4, 8)).order(ByteOrder.LITTLE_ENDIAN).getFloat();
                 Intent intent = new Intent(ACTION_ANGLE_DATA_AVAILABLE);
-                intent.putExtra(EXTRA_ANGLE_X, a0);
-                intent.putExtra(EXTRA_ANGLE_Y, a1);
+                intent.putExtra(EXTRA_ANGLE_X, angle_x);
+                intent.putExtra(EXTRA_ANGLE_Y, angle_y);
                 sendBroadcast(intent);
             }
         } else {
@@ -303,6 +311,10 @@ public class SensorCommunicator extends BluetoothGattCallback {
         }
     }
 
+    /**
+     * Callback-Funktion nach dem Schreiben einer Charakteristik (reset, calibrate, etc)
+     * Versucht, die gleiche Operation nochmal auszuführen
+     */
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         super.onCharacteristicWrite(gatt, characteristic, status);
@@ -313,12 +325,19 @@ public class SensorCommunicator extends BluetoothGattCallback {
     }
 
     // function to generate a SIG compatible UUID from a Number
+
+    /**
+     * Generiert SIG-kompatible UUID's anhand einer Nummer
+     */
     private static UUID convertFromInteger(int i) {
         final long MSB = 0x0000000000001000L;
         final long LSB = 0x800000805f9b34fbL;
         return new UUID(MSB | ((long) i << 32), LSB);
     }
 
+    /**
+     * Trennt die Verbindung zum Sensor falls verbdunen
+     */
     public void disconnect() {
         if (bluetoothGatt != null) {
             bluetoothGatt.disconnect();

@@ -49,9 +49,9 @@ public class AngleSensor {
     }
 
     // unterschiedliche Observer für unterschiedliche Daten (siehe Interfaces)
-    private static ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
-    private static ArrayList<IAngleDataObserver> angleObservers = new ArrayList<>();
-    private static HashMap<Long,AngleReceiver> angleReceiver = new HashMap<Long, AngleReceiver>();
+    private ArrayList<ISensorDataObserver> angleSensorObservers = new ArrayList<>();
+    private ArrayList<IAngleDataObserver> angleObservers = new ArrayList<>();
+    private HashMap<Long,AngleReceiver> angleReceiver = new HashMap<>();
 
     // gibt an, ob der Sensor aktuell verbunden ist
     private boolean connected = false;
@@ -418,8 +418,7 @@ public class AngleSensor {
      */
     public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
         if(!this.angleReceiver.containsValue(angleReceiver)){
-            this.angleReceiver.put(new Long(update_every
-            ), angleReceiver);
+            this.angleReceiver.put(update_every, angleReceiver);
         }
         if(service != null){
             service.registerReceiver(update_every,angleReceiver);

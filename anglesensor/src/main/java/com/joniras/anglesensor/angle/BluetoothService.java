@@ -8,12 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Binder;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -22,9 +17,7 @@ import com.joniras.anglesensor.angle.interfaces.AngleReceiver;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Objects;
 
-import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
 import static com.joniras.anglesensor.angle.SensorCommunicator.ACTION_ANGLE_DATA_AVAILABLE;
 import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_X;
 import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
@@ -38,15 +31,15 @@ public class BluetoothService extends Service {
     private AngleSensor angleSensor = AngleSensor.getInstance();
     private BluetoothAdapter mBTAdapter;
     private boolean initialAngle = false;
-
     private boolean found = false;
 
+    private List<AngleReceiverObject> angleReceiverObjectList = new ArrayList<>();
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
+        mBTAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!mBTAdapter.cancelDiscovery()) {
             Log.e(TAG, "Discovery could not be stopped with state " + (mBTAdapter.getState()));
         } else {
@@ -113,6 +106,7 @@ public class BluetoothService extends Service {
         long current_time = Calendar.getInstance().getTimeInMillis();
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
             if (angleReceiverObject != null) {
+                // Synchronized notwendig da ansonsten Empfänger teilweise mehrmals benachrichtigt werden (da Winkeldaten schnell ankommen)
                 synchronized (this) {
                     if (current_time - angleReceiverObject.getLast_update() > angleReceiverObject.getUpdate_every()) {
                         angleReceiverObject.setLast_update(current_time);
@@ -123,16 +117,13 @@ public class BluetoothService extends Service {
         }
     }
 
-    public BluetoothService() {
-    }
-
-    private List<AngleReceiverObject> angleReceiverObjectList = new ArrayList<>();
 
     public void registerReceiver(long update_every, AngleReceiver angleReceiver) {
         boolean found = false;
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
-            if(angleReceiverObject.getAngleReceiver().equals(angleReceiver)){
+            if (angleReceiverObject.getAngleReceiver().equals(angleReceiver)) {
                 found = true;
+                break;
             }
         }
         if(!found){
