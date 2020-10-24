@@ -49,10 +49,6 @@ public class SensorCommunicator extends BluetoothGattCallback {
     final static UUID BLCHARACTERISTIC_GA_CONN_PARAMS = convertFromInteger(0x2A04);
 
 
-    final static UUID BLSERVICE_GENERIC_ATTRIBUTE_PROFILE = convertFromInteger(0x1801);
-    final static UUID BLCHARACTERISTIC_GAP_ = convertFromInteger(0x2A05);
-
-
     final static UUID BLSERVICE_GENERIC_ANGLE = convertFromInteger(0x1820);
     final static UUID BLCHARACTERISTIC_A_ANGLE = convertFromInteger(0x2A70);
     final static UUID BLDESCRIPTOR_A_ANGLE = convertFromInteger(0x2902);
