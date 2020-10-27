@@ -21,7 +21,7 @@ import java.util.UUID;
  * Zuständig für die Kommunikation mit dem Sensor
  * Beinhaltet alle wichtigen UUID's für die Kommunikation
  */
-public class SensorCommunicator extends BluetoothGattCallback {
+ class SensorCommunicator extends BluetoothGattCallback {
     private final String TAG = SensorCommunicator.class.getSimpleName();
     private BluetoothGatt bluetoothGatt;
     private Context context;
@@ -40,7 +40,7 @@ public class SensorCommunicator extends BluetoothGattCallback {
             "aau.sensor_evaluation.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_SENSOR_INFORMATION =
             "aau.sensor_evaluation.ACTION_SENSOR_INFORMATION";
-    static final String EXTRA_SENSOR_INFORMATION =
+    public final static String EXTRA_SENSOR_INFORMATION =
             "aau.sensor_evaluation.EXTRA_SENSOR_INFORMATION";
 
     final static UUID BLSERVICE_GENERIC_ACCESS = convertFromInteger(0x1800);

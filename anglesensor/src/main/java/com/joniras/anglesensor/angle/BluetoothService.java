@@ -2,7 +2,6 @@ package com.joniras.anglesensor.angle;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.BroadcastReceiver;
@@ -15,7 +14,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
+import com.joniras.anglesensor.angle.interfaces.IAngleDataReceiver;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -28,7 +27,7 @@ import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
 /**
  * Service, der mit der SensorCommunicator Objekt kommuniziert
  */
-public class BluetoothService extends Service {
+ class BluetoothService extends Service {
     private String TAG = "Service";
     private final IBinder binder = new LocalBinder();
     private BluetoothAdapter mBTAdapter;
@@ -54,7 +53,7 @@ public class BluetoothService extends Service {
         }
     }
 
-    public static final String ACTION_DISCOVERY_TIMEOUT = "aau.sensor_evaluation.ACTION_DISCOVERY_TIMEOUT";
+    static final String ACTION_DISCOVERY_TIMEOUT = "aau.sensor_evaluation.ACTION_DISCOVERY_TIMEOUT";
 
     /**
      * Empfängt den Broadcast bei Änderung des Bluetooth-Verbindungs oder Suchen-Zustands
@@ -132,7 +131,7 @@ public class BluetoothService extends Service {
     }
 
 
-    public void registerReceiver(long update_every, IAngleReceiver angleReceiver) {
+    public void registerReceiver(long update_every, IAngleDataReceiver angleReceiver) {
         boolean found = false;
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
             if (angleReceiverObject.getAngleReceiver().equals(angleReceiver)) {
@@ -145,7 +144,7 @@ public class BluetoothService extends Service {
         }
     }
 
-    public void unregisterReceiver(IAngleReceiver angleReceiver) {
+    public void unregisterReceiver(IAngleDataReceiver angleReceiver) {
         AngleReceiverObject toDelete = null;
         for (AngleReceiverObject angleReceiverObject : angleReceiverObjectList) {
             if (angleReceiverObject.getAngleReceiver() == angleReceiver) {

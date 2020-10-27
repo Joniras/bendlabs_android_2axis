@@ -11,14 +11,13 @@ public class SensorInformation implements Serializable {
     private String hardwareRevision;
     private String firmwareRevision;
     private String softwareRevision;
-
     private String deviceName;
 
     public String getManufacturer() {
         return manufacturer;
     }
 
-    public void setManufacturer(String manufacturer) {
+    void setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
     }
 
@@ -26,7 +25,7 @@ public class SensorInformation implements Serializable {
         return model;
     }
 
-    public void setModel(String model) {
+    void setModel(String model) {
         this.model = model;
     }
 
@@ -34,7 +33,7 @@ public class SensorInformation implements Serializable {
         return hardwareRevision;
     }
 
-    public void setHardwareRevision(String hardwareRevision) {
+    void setHardwareRevision(String hardwareRevision) {
         this.hardwareRevision = hardwareRevision;
     }
 
@@ -42,7 +41,7 @@ public class SensorInformation implements Serializable {
         return firmwareRevision;
     }
 
-    public void setFirmwareRevision(String firmwareRevision) {
+    void setFirmwareRevision(String firmwareRevision) {
         this.firmwareRevision = firmwareRevision;
     }
 
@@ -50,7 +49,7 @@ public class SensorInformation implements Serializable {
         return softwareRevision;
     }
 
-    public void setSoftwareRevision(String softwareRevision) {
+    void setSoftwareRevision(String softwareRevision) {
         this.softwareRevision = softwareRevision;
     }
 
@@ -58,7 +57,7 @@ public class SensorInformation implements Serializable {
         return deviceName;
     }
 
-    public void setDeviceName(String deviceName) {
+    void setDeviceName(String deviceName) {
         this.deviceName = deviceName;
     }
 

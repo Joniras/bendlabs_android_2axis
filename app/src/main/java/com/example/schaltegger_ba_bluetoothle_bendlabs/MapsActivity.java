@@ -18,9 +18,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.Task;
 import com.joniras.anglesensor.angle.AnglePair;
 import com.joniras.anglesensor.angle.AngleSensor;
-import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
+import com.joniras.anglesensor.angle.interfaces.IAngleDataReceiver;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver, IAngleReceiver {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, IDisplayFingerObserver, IAngleDataReceiver {
 
     private GoogleMap mMap;
     private DISPLAYFINGER currentFinger = DISPLAYFINGER.OFF;

@@ -1,6 +1,6 @@
 package com.joniras.anglesensor.angle;
 
-import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
+import com.joniras.anglesensor.angle.interfaces.IAngleDataReceiver;
 
 /**
  * Klasse zum Speichern von Empfängern welche  Winkeldaten in einem bestimmten Zeitabstand anfordern
@@ -8,9 +8,9 @@ import com.joniras.anglesensor.angle.interfaces.IAngleReceiver;
 class AngleReceiverObject{
     private long last_update;
     private long update_every;
-    private final IAngleReceiver angleReceiver;
+    private final IAngleDataReceiver angleReceiver;
 
-    public AngleReceiverObject(long update_every, IAngleReceiver angleReceiver) {
+    AngleReceiverObject(long update_every, IAngleDataReceiver angleReceiver) {
         this.last_update = 0;
         this.update_every = update_every;
         this.angleReceiver = angleReceiver;
@@ -28,7 +28,7 @@ class AngleReceiverObject{
         return update_every;
     }
 
-    public IAngleReceiver getAngleReceiver() {
+    public IAngleDataReceiver getAngleReceiver() {
         return angleReceiver;
     }
 }
