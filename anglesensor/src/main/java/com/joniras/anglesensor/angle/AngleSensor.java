@@ -48,7 +48,7 @@ public class AngleSensor {
     // Der Service für die Bluetooth-Schnittstelle
     private static BluetoothService service;
 
-    public static final int permissionRequestCode = new Random().nextInt();
+    public static final int permissionRequestCode = new Random().nextInt((int)Math.pow(2,16));
 
     private AngleSensor() {
 
