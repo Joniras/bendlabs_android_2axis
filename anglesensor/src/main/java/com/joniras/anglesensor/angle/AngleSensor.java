@@ -129,6 +129,7 @@ public class AngleSensor {
     }
 
     /**
+     * Setzt die Geschwindigkeit, in der der Sensor neue Winkeldaten an das Smartphone schicken soll
      * @param rate Ein Wert zwischen 1 und 500 (1 ist schnell, 500 ist sehr langsam)
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
@@ -166,7 +167,7 @@ public class AngleSensor {
     }
 
     /**
-     * Setzt die Software des Sensors zurück auf den Auslieferungszustand (bricht Verbdindung zum Sensor ab, da der Sensor neu startet)
+     * Setzt die Software des Sensors zurück auf den Auslieferungszustand (bricht Verdindung zum Sensor ab, da der Sensor neu startet)
      *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
