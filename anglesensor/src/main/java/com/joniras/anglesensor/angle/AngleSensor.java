@@ -62,8 +62,14 @@ public class AngleSensor {
     // gibt an, ob der Sensor aktuell verbunden ist
     private boolean connected = false;
 
-    //zur Überprüfung, ob die Funktion "start" aufgerufen wurde
+    // zur Überprüfung, ob die Funktion "start" aufgerufen wurde
     private boolean started = false;
+
+    // gibt an, ob sofort nach erfolgreicher Verbindung Winkeldaten abonniert werden
+    private boolean initialAngle = true;
+
+    // wenn true, dann wird sofort nach dem Sensor gesucht wenn die Bibliothek bereit ist
+    private boolean discoverOnReady = false;
 
     // Der Sensor der AAU mit der Inventarnummer "ISYS-2019-122"
     private String IDOFSensor = "FA:0E:BA:83:09:8A";
@@ -75,13 +81,24 @@ public class AngleSensor {
         IDOFSensor = id;
     }
 
-
     /**
      * Initialisiert den Empfänger der Broadcasts und überprüft die Berechtigungen
      *
      * @param context für den Service (bentötigt zum Starten des Services)
      */
-    public void initialise(Activity context) {
+    public void initialise(Activity context){
+        initialise(context, false, true);
+    }
+
+    /**
+     * Initialisiert den Empfänger der Broadcasts und überprüft die Berechtigungen
+     * @param discoverOnReady wenn true, wird sofort nach dem Sensor gesucht, wenn die Bibliothek bereit ist
+     * @param initialAngle gibt an, ob bei erfolgreicher Verbdindung sofort Winkeldaten abonniert werden
+     * @param context für den Service (bentötigt zum Starten des Services)
+     */
+    public void initialise(Activity context, boolean discoverOnReady, boolean initialAngle) {
+        this.discoverOnReady = discoverOnReady;
+        this.initialAngle = initialAngle;
 
         // Berechtigungen prüfen
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -363,6 +380,9 @@ public class AngleSensor {
             // Bind Service to Activity
             BluetoothService.LocalBinder binder = (BluetoothService.LocalBinder) service;
             AngleSensor.service = binder.getService();
+            if(discoverOnReady){
+                discover(initialAngle);
+            }
             AngleSensor.getInstance().notifyServiceReady();
         }
 
