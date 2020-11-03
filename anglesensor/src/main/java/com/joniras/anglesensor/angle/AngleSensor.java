@@ -472,8 +472,6 @@ public class AngleSensor {
         }
         if (service != null) {
             service.registerReceiver(update_every, angleReceiver);
-        } else {
-            throw new IllegalStateException("Service not ready, wait for onDeviceConnected callback");
         }
     }
 
