@@ -1,3 +1,4 @@
+[![](https://jitpack.io/v/Joniras/bendlabs_android_2axis.svg)](https://jitpack.io/#Joniras/bendlabs_android_2axis)
 # Android Library for development with a 2-Axis Bend-Sensor
 This project's purpose was to build an Android library for future work with a sepecific sensor. The used sensor is a 2-Axis Bend-Sensor from Bendlabs.
 With their permission i therefore offer a library for easier development with the sensor.
