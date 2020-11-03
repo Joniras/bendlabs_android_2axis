@@ -26,8 +26,9 @@ import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
 
 /**
  * Service, der mit der SensorCommunicator Objekt kommuniziert
+ * Muss Public sein, da er ansonsten von Android nicht gestartet werden kann
  */
- class BluetoothService extends Service {
+ public class BluetoothService extends Service {
     private String TAG = "Service";
     private final IBinder binder = new LocalBinder();
     private BluetoothAdapter mBTAdapter;
@@ -63,9 +64,8 @@ import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
         @Override
         public void onReceive(Context context, Intent intent) {
             assert intent.getAction() != null;
-            switch (intent.getAction()) {
-                case ACTION_ANGLE_DATA_AVAILABLE:
-                    notifyReceiver(new AnglePair(intent.getFloatExtra(EXTRA_ANGLE_X, 0), intent.getFloatExtra(EXTRA_ANGLE_Y, 0)));
+            if (ACTION_ANGLE_DATA_AVAILABLE.equals(intent.getAction())) {
+                notifyReceiver(new AnglePair(intent.getFloatExtra(EXTRA_ANGLE_X, 0), intent.getFloatExtra(EXTRA_ANGLE_Y, 0)));
             }
         }
     };
