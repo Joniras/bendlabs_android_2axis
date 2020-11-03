@@ -82,7 +82,7 @@ public class AngleSensor {
      * @param context für den Service (bentötigt zum Starten des Services)
      */
     public void initialise(Activity context) {
-        
+
         // Berechtigungen prüfen
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, permissionRequestCode);

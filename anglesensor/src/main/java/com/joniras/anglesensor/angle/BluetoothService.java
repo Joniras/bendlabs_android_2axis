@@ -112,6 +112,18 @@ import static com.joniras.anglesensor.angle.SensorCommunicator.EXTRA_ANGLE_Y;
             super.onScanFailed(errorCode);
             sendBroadcast(new Intent(ACTION_DISCOVERY_TIMEOUT));
         }
+
+        @Override
+        public void onBatchScanResults(List<ScanResult> results) {
+            super.onBatchScanResults(results);
+            for (ScanResult result : results) {
+                String address = result.getDevice().getAddress();
+                if(address.equals(AngleSensor.getInstance().getIDOFSensor())){
+                    found = true;
+                    connect(address);
+                }
+            }
+        }
     };
 
 
