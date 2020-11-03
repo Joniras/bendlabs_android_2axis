@@ -48,7 +48,7 @@ public class AngleSensor {
     // Der Service für die Bluetooth-Schnittstelle
     private static BluetoothService service;
 
-    public static final int permissionRequestCode = new Random().nextInt((int)Math.pow(2,16));
+    public static final int permissionRequestCode = new Random().nextInt((int) Math.pow(2, 16));
 
     private AngleSensor() {
 
@@ -82,28 +82,31 @@ public class AngleSensor {
      * @param context für den Service (bentötigt zum Starten des Services)
      */
     public void initialise(Activity context) {
-        // Service starten und an den Context binden  (Service stirbt mit Activity)
-        Intent intent = new Intent(context, BluetoothService.class);
-        context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
-
-        // falls nicht bereits geschehen
-        if(!started){
-            // Empfang der Ereignisse einrichten
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-            filter.addAction(ACTION_GATT_CONNECTED);
-            filter.addAction(ACTION_GATT_DISCONNECTED);
-            filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
-            filter.addAction(ACTION_SENSOR_INFORMATION);
-            filter.addAction(ACTION_DISCOVERY_TIMEOUT);
-            filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
-            context.registerReceiver(blEReceiver, filter);
-        }
-        started = true;
-
+        
         // Berechtigungen prüfen
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(context, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, permissionRequestCode);
+        } else {
+            // Service starten und an den Context binden  (Service stirbt mit Activity)
+            Intent intent = new Intent(context, BluetoothService.class);
+            context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+
+            // falls nicht bereits geschehen
+            if (!started) {
+                // Empfang der Ereignisse einrichten
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+                filter.addAction(ACTION_GATT_CONNECTED);
+                filter.addAction(ACTION_GATT_DISCONNECTED);
+                filter.addAction(ACTION_GATT_SERVICES_DISCOVERED);
+                filter.addAction(ACTION_SENSOR_INFORMATION);
+                filter.addAction(ACTION_DISCOVERY_TIMEOUT);
+                filter.addAction(ACTION_ANGLE_DATA_AVAILABLE);
+                context.registerReceiver(blEReceiver, filter);
+            }
+            started = true;
+        }
+
     }
 
     /**
@@ -130,6 +133,7 @@ public class AngleSensor {
 
     /**
      * Setzt die Geschwindigkeit, in der der Sensor neue Winkeldaten an das Smartphone schicken soll
+     *
      * @param rate Ein Wert zwischen 1 und 500 (1 ist schnell, 500 ist sehr langsam)
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
@@ -179,6 +183,7 @@ public class AngleSensor {
 
     /**
      * Trennt die Verbindung zum Sensor
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void disconnect() throws IllegalStateException {
@@ -190,6 +195,7 @@ public class AngleSensor {
 
     /**
      * Schaltet die Benachrichtigungen über neue Winkelwerte ein
+     *
      * @throws IllegalStateException Wenn Service nicht bereit (vermutlich ein Problem mit Berechtigungen) oder Sensor noch nicht verbunden
      */
     public void turnOn() throws IllegalStateException {
