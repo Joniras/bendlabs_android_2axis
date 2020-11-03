@@ -81,7 +81,7 @@ public class AngleSensor {
      *
      * @param context für den Service (bentötigt zum Starten des Services)
      */
-    public void start(Activity context) {
+    public void initialise(Activity context) {
         // Service starten und an den Context binden  (Service stirbt mit Activity)
         Intent intent = new Intent(context, BluetoothService.class);
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
@@ -378,9 +378,15 @@ public class AngleSensor {
 
     };
 
+    /**
+     * Observer benachrichtigen, dass der Service bereit ist und somit nun alle Funktionen verfügbar sind
+     */
     private void notifyServiceReady() {
         for (Map.Entry<Long, IAngleDataReceiver> entry : angleReceiver.entrySet()) {
             service.registerReceiver(entry.getKey(), entry.getValue());
+        }
+        for (ISensorDataObserver observer : angleSensorObservers) {
+            observer.onLibraryReady();
         }
     }
 
@@ -451,7 +457,7 @@ public class AngleSensor {
      * Sobald ein Gerät verbunden wurde, kann über diese Funktion ein Update angefordert werden im Abstand update_every
      * Das update nach den angegebenen Millisekunden kann nicht garantiert werden wenn die SampleRate zu hoch gesetzt wurde
      *
-     * @param update_every  Der Abstand in Milliskeunden, nach denen der angleReceiver über neue Winkeldaten benachrichtigt wird
+     * @param update_every  Der Abstand in Milliskeunden, nach denen der angleReceiver über neue Winkeldaten benachrichtigt wird (Bei 0 wird jeder Winkelwert weitergegeben)
      * @param angleReceiver bekommt Beanchrichtungen über Winkelwerte
      */
     public void registerReceiver(long update_every, IAngleDataReceiver angleReceiver) {

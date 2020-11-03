@@ -42,7 +42,7 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        angleSensor.start(this);
+        angleSensor.initialise(this);
         angleSensor.registerObserver(this);
 
         setContentView(R.layout.activity_main);
@@ -221,6 +221,11 @@ public class MainActivity extends Activity implements View.OnClickListener, ISen
     @Override
     public void onDeviceNotFound() {
         mBluetoothStatus.setText(R.string.device_not_found);
+    }
+
+    @Override
+    public void onLibraryReady() {
+
     }
 
 

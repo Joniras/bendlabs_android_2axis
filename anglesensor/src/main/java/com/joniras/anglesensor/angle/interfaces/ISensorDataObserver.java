@@ -12,4 +12,5 @@ public interface ISensorDataObserver extends IAngleDataObserver {
     void onBluetoothStateChanged(boolean isOn);
     void onSensorInformation(SensorInformation info);
     void onDeviceNotFound();
+    void onLibraryReady();
 }
