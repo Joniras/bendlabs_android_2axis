@@ -87,7 +87,17 @@ public class AngleSensor {
      * @param context für den Service (bentötigt zum Starten des Services)
      */
     public void initialise(Activity context){
-        initialise(context, false, true);
+        initialise(context, true, true);
+    }
+
+    /**
+     * Initialisiert den Empfänger der Broadcasts und überprüft die Berechtigungen
+     *
+     * @param context für den Service (bentötigt zum Starten des Services)
+     * @param discoverOnReady gibt an, ob sofort nach Sensor gesucht werden soll wenn Bibliothek bereit
+     */
+    public void initialise(Activity context, boolean discoverOnReady){
+        initialise(context, discoverOnReady, true);
     }
 
     /**
